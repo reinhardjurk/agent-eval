@@ -77,13 +77,19 @@ def to_ollama_messages(system: str, messages: list, tool_names: dict[str, str]) 
 
 
 class OllamaLLM:
-    def __init__(self, model: str, max_tokens: int = 1024, host: str | None = None):
+    def __init__(self, model: str, max_tokens: int = 1024, host: str | None = None,
+                 think: bool | None = None):
         import ollama  # lazy: nur noetig, wenn wirklich ein ollama/-Modell laeuft
 
         self.model = model  # inkl. Praefix, fuer Tracing/Report
         self._name = model[len(PREFIX):] if model.startswith(PREFIX) else model
         self._client = ollama.Client(host=host or os.environ.get("OLLAMA_HOST"))
         self.max_tokens = max_tokens
+        # think=False schaltet das interne Denken von Thinking-Modellen (qwen3,
+        # gemma4, ...) ab — wichtig fuer Rollen mit kleinem Token-Budget, sonst
+        # frisst das Denken das num_predict-Kontingent und der Text bleibt leer.
+        # None = Flag nicht senden (Default des Modells).
+        self.think = think
         self._tool_names: dict[str, str] = {}  # synthetische tool_use-IDs -> Tool-Name
 
     def complete(self, system: str, messages: list, tools: list | None = None) -> LLMResult:
@@ -93,13 +99,15 @@ class OllamaLLM:
 
         t0 = time.perf_counter()
         try:
-            text, calls, tokens_in, tokens_out, ttft = self._stream(
-                payload_msgs, payload_tools, options, t0)
+            text, calls, tokens_in, tokens_out, ttft = self._run(
+                payload_msgs, payload_tools, options, t0, self.think)
         except Exception:
-            # Aeltere Ollama-Versionen streamen nicht mit Tools -> blockierender Aufruf
-            text, calls, tokens_in, tokens_out = self._blocking(
-                payload_msgs, payload_tools, options)
-            ttft = None
+            if self.think is None:
+                raise
+            # Modell/Server akzeptiert das think-Flag nicht -> dauerhaft weglassen
+            self.think = None
+            text, calls, tokens_in, tokens_out, ttft = self._run(
+                payload_msgs, payload_tools, options, t0, None)
         latency = time.perf_counter() - t0
 
         blocks: list = []
@@ -120,7 +128,15 @@ class OllamaLLM:
         )
         return LLMResult(message, latency, ttft, tokens_in, tokens_out)
 
-    def _stream(self, msgs, tools, options, t0):
+    def _run(self, msgs, tools, options, t0, think):
+        try:
+            return self._stream(msgs, tools, options, t0, think)
+        except Exception:
+            # Aeltere Ollama-Versionen streamen nicht mit Tools -> blockierender Aufruf
+            text, calls, tokens_in, tokens_out = self._blocking(msgs, tools, options, think)
+            return text, calls, tokens_in, tokens_out, None
+
+    def _stream(self, msgs, tools, options, t0, think):
         text_parts: list[str] = []
         calls: list = []
         tokens_in = tokens_out = 0
@@ -128,6 +144,8 @@ class OllamaLLM:
         kwargs = {"model": self._name, "messages": msgs, "stream": True, "options": options}
         if tools:
             kwargs["tools"] = tools
+        if think is not None:
+            kwargs["think"] = think
         for chunk in self._client.chat(**kwargs):
             msg = _field(chunk, "message")
             delta = _field(msg, "content") or ""
@@ -141,10 +159,12 @@ class OllamaLLM:
                 tokens_out = _field(chunk, "eval_count") or 0
         return "".join(text_parts), calls, tokens_in, tokens_out, ttft
 
-    def _blocking(self, msgs, tools, options):
+    def _blocking(self, msgs, tools, options, think=None):
         kwargs = {"model": self._name, "messages": msgs, "stream": False, "options": options}
         if tools:
             kwargs["tools"] = tools
+        if think is not None:
+            kwargs["think"] = think
         resp = self._client.chat(**kwargs)
         msg = _field(resp, "message")
         return (

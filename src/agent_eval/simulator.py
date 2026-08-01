@@ -44,10 +44,14 @@ class UserSimulator:
             for m in transcript
         )
         prompt = f"Bisheriges Gespraech:\n{convo}\n\nWas sagst du als Kunde als Naechstes?"
-        with self.tracer.generation("user-simulator", self.llm.model, input=prompt) as gen:
-            res = self.llm.complete(self.system, [{"role": "user", "content": prompt}])
-            text = extract_text(res.message).strip()
-            gen.record(res, output=text)
+        text = ""
+        for _ in range(2):  # ein Retry bei leerer Antwort (lokale Modelle)
+            with self.tracer.generation("user-simulator", self.llm.model, input=prompt) as gen:
+                res = self.llm.complete(self.system, [{"role": "user", "content": prompt}])
+                text = extract_text(res.message).strip()
+                gen.record(res, output=text)
+            if text:
+                break
         if text.startswith(DONE_MARKER):
             return text[len(DONE_MARKER):].strip(" :,-"), True
         return text, False

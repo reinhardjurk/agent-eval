@@ -28,14 +28,14 @@ FAKE_CUSTOMER_TEXT = "[DONE] Danke, das war alles."
 
 
 def _build_llm(client, model: str, max_tokens: int, effort: str | None,
-               fake: bool, fake_text: str):
+               fake: bool, fake_text: str, think: bool | None = None):
     """Provider-Weiche: "ollama/..." -> lokales Modell, sonst Claude API."""
     if fake:
         return FakeLLM(fake_text)
     if is_ollama_model(model):
         from .ollama_llm import OllamaLLM
 
-        return OllamaLLM(model, max_tokens=max_tokens)
+        return OllamaLLM(model, max_tokens=max_tokens, think=think)
     return LLM(client, model, max_tokens=max_tokens, effort=effort)
 
 
@@ -54,8 +54,10 @@ def run_conversation(exp: ResolvedExperiment, scenario: Scenario, rep: int, clie
     runtime = MockToolRuntime(copy.deepcopy(exp.fixtures))
     assistant = MultiAgentAssistant(exp, _make_llm_factory(client, exp, fake), runtime, tracer)
 
-    sim_llm = _build_llm(client, exp.config.simulator.model, 300, None,
-                         fake, FAKE_CUSTOMER_TEXT)
+    # Simulator: kleines Budget + think=False, damit Thinking-Modelle nicht das
+    # gesamte Token-Kontingent verdenken und leere Antworten liefern
+    sim_llm = _build_llm(client, exp.config.simulator.model, 600, None,
+                         fake, FAKE_CUSTOMER_TEXT, think=False)
     simulator = UserSimulator(sim_llm, scenario, tracer)
 
     transcript: list[dict] = [{"role": "customer", "text": scenario.opening_message}]
