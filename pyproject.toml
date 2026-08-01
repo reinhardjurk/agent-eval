@@ -12,6 +12,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+ollama = ["ollama>=0.4"]
 
 [build-system]
 requires = ["setuptools>=68"]

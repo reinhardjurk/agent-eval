@@ -69,6 +69,38 @@ nachvollziehbar und per CI regressionsgetestet:
 | Initialkontext | `configs` → `context` | System-Prompt-Varianten, `customer_context: none/minimal/full` |
 | Sampling | `configs` → `sampling` | `max_tokens`, `effort` (Latenz-Hebel; von Haiku 4.5 nicht unterstützt) |
 
+### Andere Modelle einstellen
+
+Das Modell wird an drei Stellen konfiguriert: `model` (Assistent), `simulator.model`
+und `judge.model` in der Experiment-YAML; zusätzlich kann jede Agent Card per
+`"model": "..."` das Modell für einen einzelnen Agenten überschreiben. Simulator
+und Judge bei Vergleichen **konstant halten**, sonst variieren Kunde und Bewerter mit.
+Neue Modelle in `PRICES` ([report.py](src/agent_eval/report.py)) eintragen, damit die
+Kostenschätzung stimmt.
+
+### Lokale Modelle über Ollama
+
+Modellnamen mit dem Präfix `ollama/` laufen gegen einen lokalen Ollama-Server statt
+gegen die Claude API — siehe [configs/ollama-qwen.yaml](configs/ollama-qwen.yaml):
+
+```bash
+pip install -e ".[ollama]"
+ollama pull qwen3:14b            # Modell mit Tool-Calling-Support waehlen!
+python -m agent_eval run --config configs/ollama-qwen.yaml
+```
+
+Der Adapter ([ollama_llm.py](src/agent_eval/ollama_llm.py)) übersetzt Tool-Calls
+zwischen Anthropic- und Ollama-Format; Server-Adresse via `OLLAMA_HOST`
+(Default `http://localhost:11434`). Hinweise:
+
+- Simulator und Judge bleiben standardmäßig auf Claude (fairer Vergleich) —
+  dafür wird weiterhin `ANTHROPIC_API_KEY` benötigt. Rein lokal: `simulator.model`
+  ebenfalls auf `ollama/...` setzen und mit `--no-judge` starten.
+- Der Judge selbst unterstützt nur Claude-Modelle.
+- Lokale Kosten werden als 0 gerechnet; Latenzen sind hardwareabhängig und mit
+  API-Latenzen nur eingeschränkt vergleichbar.
+- Schwaches Tool-Calling kleiner Modelle ist ein Messergebnis, kein Harness-Fehler.
+
 ## Metriken
 
 | Achse | Was gemessen wird |

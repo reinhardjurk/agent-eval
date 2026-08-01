@@ -18,6 +18,7 @@ from .config import ResolvedExperiment, Scenario, load_experiment, load_scenario
 from .evaluators import deterministic_checks, run_judge
 from .llm import LLM, FakeLLM
 from .mock_tools import MockToolRuntime
+from .ollama_llm import is_ollama_model
 from .simulator import UserSimulator
 from .tracing import Tracer
 
@@ -26,13 +27,24 @@ FAKE_ASSISTANT_TEXT = ("Ich habe Ihr Anliegen aufgenommen und kuemmere mich daru
 FAKE_CUSTOMER_TEXT = "[DONE] Danke, das war alles."
 
 
+def _build_llm(client, model: str, max_tokens: int, effort: str | None,
+               fake: bool, fake_text: str):
+    """Provider-Weiche: "ollama/..." -> lokales Modell, sonst Claude API."""
+    if fake:
+        return FakeLLM(fake_text)
+    if is_ollama_model(model):
+        from .ollama_llm import OllamaLLM
+
+        return OllamaLLM(model, max_tokens=max_tokens)
+    return LLM(client, model, max_tokens=max_tokens, effort=effort)
+
+
 def _make_llm_factory(client, exp: ResolvedExperiment, fake: bool):
     sampling = exp.config.sampling
 
     def make_llm(model: str):
-        if fake:
-            return FakeLLM(FAKE_ASSISTANT_TEXT)
-        return LLM(client, model, max_tokens=sampling.max_tokens, effort=sampling.effort)
+        return _build_llm(client, model, sampling.max_tokens, sampling.effort,
+                          fake, FAKE_ASSISTANT_TEXT)
 
     return make_llm
 
@@ -42,10 +54,8 @@ def run_conversation(exp: ResolvedExperiment, scenario: Scenario, rep: int, clie
     runtime = MockToolRuntime(copy.deepcopy(exp.fixtures))
     assistant = MultiAgentAssistant(exp, _make_llm_factory(client, exp, fake), runtime, tracer)
 
-    if fake:
-        sim_llm = FakeLLM(FAKE_CUSTOMER_TEXT)
-    else:
-        sim_llm = LLM(client, exp.config.simulator.model, max_tokens=300)
+    sim_llm = _build_llm(client, exp.config.simulator.model, 300, None,
+                         fake, FAKE_CUSTOMER_TEXT)
     simulator = UserSimulator(sim_llm, scenario, tracer)
 
     transcript: list[dict] = [{"role": "customer", "text": scenario.opening_message}]
@@ -130,11 +140,20 @@ def run_experiment(config_path: str | Path, scenarios_path: str | Path,
     scenarios = load_scenarios(Path(scenarios_path))
     reps = reps or exp.config.repetitions
 
+    if judge_enabled and is_ollama_model(exp.config.judge.model):
+        print("[runner] Judge unterstuetzt nur Claude-Modelle – Judge wird uebersprungen. "
+              "Setze judge.model auf ein Claude-Modell oder nutze --no-judge.")
+        judge_enabled = False
+
+    # Anthropic-Client nur, wenn mindestens eine Rolle ein Claude-Modell nutzt.
     client = None
     if not fake:
-        import anthropic
+        models = [exp.config.model, exp.config.simulator.model]
+        models += [card.model or exp.config.model for card in exp.cards]
+        if judge_enabled or any(not is_ollama_model(m) for m in models):
+            import anthropic
 
-        client = anthropic.Anthropic()
+            client = anthropic.Anthropic()
 
     tracer = Tracer(enabled=not fake)
 

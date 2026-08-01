@@ -1,0 +1,36 @@
+# Lokales Modell ueber Ollama als Testkandidat.
+#
+# Voraussetzungen:
+#   pip install -e ".[ollama]"
+#   ollama pull qwen3:14b && ollama serve      (Host via OLLAMA_HOST aenderbar)
+#   ANTHROPIC_API_KEY gesetzt                  (Simulator + Judge laufen auf Claude,
+#                                               damit der Vergleich fair bleibt)
+#
+# Rein lokal ohne API-Key: simulator.model ebenfalls auf ollama/... setzen
+# und mit --no-judge starten. Achtung: das veraendert auch den simulierten
+# Kunden und macht Ergebnisse nicht mehr mit anderen Konfigurationen vergleichbar.
+id: ollama-qwen3-14b
+model: ollama/qwen3:14b
+
+agents:
+  - cards/billing-agent.json
+  - cards/account-agent.json
+
+mcp:
+  - server: mcp/crm-server.yaml
+
+context:
+  system_prompt: prompts/concierge.md
+  customer_context: minimal
+
+sampling:
+  max_tokens: 1024
+  # effort gibt es nur bei Claude-Modellen; bei ollama/ wird es ignoriert
+
+simulator:
+  model: claude-opus-5
+
+judge:
+  model: claude-opus-5
+
+repetitions: 3
