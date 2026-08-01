@@ -1,0 +1,23 @@
+# Zelle 4: Tool-Variation — knappe statt ausfuehrliche Tool-Beschreibungen
+id: auto-lokal-qwen-knapp
+model: ollama/qwen3.6:35b-mlx
+
+agents:
+  - cards/navigation-agent.json
+  - cards/entertainment-agent.json
+  - cards/comfort-agent.json
+
+mcp:
+  - server: mcp/car-server-knapp.yaml
+
+context:
+  system_prompt: prompts/car-concierge.md
+  customer_context: none
+
+sampling:
+  max_tokens: 2048
+
+simulator:
+  model: ollama/gemma4:latest
+
+repetitions: 1

@@ -1,0 +1,93 @@
+# Variante von car-server.yaml mit bewusst KNAPPEN Tool-Beschreibungen.
+# Gleiche Tools, gleiche Handler, gleiche Schemas — misst den Effekt der
+# Beschreibungsqualitaet auf Tool-Wahl und Argumente.
+name: car
+fixtures: fixtures/car.json
+tools:
+  - name: start_navigation
+    description: "Startet Navigation."
+    handler: start_navigation
+    input_schema:
+      type: object
+      properties:
+        destination: {type: string}
+      required: [destination]
+
+  - name: find_poi
+    description: "Sucht Orte."
+    handler: find_poi
+    input_schema:
+      type: object
+      properties:
+        category: {type: string}
+      required: [category]
+
+  - name: add_stopover
+    description: "Zwischenstopp."
+    handler: add_stopover
+    input_schema:
+      type: object
+      properties:
+        name: {type: string}
+      required: [name]
+
+  - name: get_traffic_info
+    description: "Verkehrsinfo."
+    handler: get_traffic_info
+    input_schema:
+      type: object
+      properties: {}
+
+  - name: play_media
+    description: "Spielt Medien."
+    handler: play_media
+    input_schema:
+      type: object
+      properties:
+        query: {type: string}
+      required: [query]
+
+  - name: set_volume
+    description: "Lautstaerke."
+    handler: set_volume
+    input_schema:
+      type: object
+      properties:
+        level: {type: integer}
+      required: [level]
+
+  - name: tune_radio
+    description: "Radiosender."
+    handler: tune_radio
+    input_schema:
+      type: object
+      properties:
+        station: {type: string}
+      required: [station]
+
+  - name: set_temperature
+    description: "Temperatur."
+    handler: set_temperature
+    input_schema:
+      type: object
+      properties:
+        zone: {type: string, enum: [fahrer, beifahrer, hinten, alle]}
+        celsius: {type: number}
+      required: [zone, celsius]
+
+  - name: set_seat_heating
+    description: "Sitzheizung."
+    handler: set_seat_heating
+    input_schema:
+      type: object
+      properties:
+        seat: {type: string, enum: [fahrer, beifahrer]}
+        level: {type: integer}
+      required: [seat, level]
+
+  - name: activate_defrost
+    description: "Enteisung."
+    handler: activate_defrost
+    input_schema:
+      type: object
+      properties: {}

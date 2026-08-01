@@ -1,0 +1,14 @@
+id: nav-stau-05
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Gestresste Pendlerin, 41, spaet dran zu einem wichtigen Termin; spricht schnell und knapp.
+goal: Du hast im Radio von einem Unfall auf der A7 gehoert und willst nur wissen, wie die Verkehrslage
+  aussieht und ob du betroffen bist. Du willst KEINE neue Route starten, nur die Auskunft.
+constraints: Wenn der Assistent ungefragt eine neue Navigation starten will, lehnst du ab.
+opening_message: Sag mal, auf der A sieben soll ein Unfall sein. Sieht's bei uns schlimm aus?
+max_turns: 5
+success_criteria:
+  tool_calls:
+  - tool: get_traffic_info
+  forbidden_tools:
+  - start_navigation

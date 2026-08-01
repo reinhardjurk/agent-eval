@@ -1,0 +1,13 @@
+id: ent-musik-02
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Gestresste Pendlerin, 41, spaet dran zu einem wichtigen Termin; spricht schnell und knapp.
+goal: Du willst den Song 'Bohemian Rhapsody' von Queen hoeren und eine Bestaetigung, dass es jetzt laeuft.
+constraints: ''
+opening_message: Ich brauch was auf die Ohren.
+max_turns: 6
+success_criteria:
+  tool_calls:
+  - tool: play_media
+    with_args:
+      query: '*bohemian*'

@@ -1,0 +1,7 @@
+{
+  "name": "car-agent",
+  "description": "Universalagent fuer alle Fahrzeugfunktionen: Navigation und Verkehr, Medien und Radio, Klima und Komfort. Delegiere jedes fachliche Anliegen an diesen Agenten.",
+  "system_prompt": "prompts/car-agent.md",
+  "tools": ["start_navigation", "find_poi", "add_stopover", "get_traffic_info", "play_media", "tune_radio", "set_volume", "set_temperature", "set_seat_heating", "activate_defrost"],
+  "model": null
+}
