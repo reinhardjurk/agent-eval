@@ -1,0 +1,248 @@
+# Anleitung: agent-eval benutzen
+
+Diese Anleitung führt einmal durch den kompletten Arbeitszyklus: Einrichten →
+Lauf ausführen → Ergebnisse lesen → **Konfigurationen und Szenarien vergleichen** →
+eigene Varianten anlegen.
+
+---
+
+## 1. Einrichten
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env
+```
+
+In `.env` mindestens `ANTHROPIC_API_KEY` eintragen (Langfuse-Keys sind optional),
+dann in die Shell laden:
+
+```bash
+export $(grep -v '^#' .env | xargs)
+```
+
+**Funktionstest ohne API-Key** — läuft komplett offline mit einem Fake-LLM und
+prüft nur die Pipeline, nicht die Qualität:
+
+```bash
+python -m agent_eval run --config configs/baseline.yaml --reps 1 --fake
+```
+
+---
+
+## 2. Einen Lauf ausführen
+
+```bash
+python -m agent_eval run --config configs/baseline.yaml
+```
+
+Was dabei passiert: Für jedes Szenario in `scenarios/` (Default) wird `repetitions`-mal
+(aus der Config, überschreibbar mit `--reps N`) ein komplettes Multi-Turn-Gespräch
+geführt — der User-Simulator spielt den Kunden, der Assistent delegiert an seine
+Agenten, die Mock-Tools loggen jeden Aufruf. Danach laufen die deterministischen
+Checks und der LLM-Judge; alles wird nach Langfuse getraced (falls Keys gesetzt).
+
+Wichtige Optionen:
+
+| Option | Wirkung |
+|---|---|
+| `--scenarios <pfad>` | Szenario-Datei **oder** -Verzeichnis (Default: `scenarios/`). Auto-Domäne: `--scenarios scenarios/auto` |
+| `--reps N` | Wiederholungen pro Szenario (überschreibt die Config) |
+| `--out <dir>` | Ausgabeverzeichnis (Default: `results/<config-id>/`) |
+| `--no-judge` | LLM-Judge überspringen (schneller/billiger, nur Checks) |
+| `--fake` | Kein API-Aufruf, Pipeline-Test |
+
+Die beiden Domänen laufen getrennt — Config und Szenarien müssen zusammenpassen:
+
+```bash
+# Telco ("Aria")
+python -m agent_eval run --config configs/baseline.yaml --scenarios scenarios
+
+# Automotive ("Nova")
+python -m agent_eval run --config configs/auto-baseline.yaml --scenarios scenarios/auto
+```
+
+---
+
+## 3. Ergebnisse lesen
+
+Jeder Lauf schreibt nach `results/<config-id>/`:
+
+- **`summary.md`** — die Kennzahlentabelle (auch auf stdout) plus alle
+  fehlgeschlagenen Checks mit Begründung.
+- **`results.json`** — Rohdaten: pro Lauf das komplette Transkript, das Tool-Log,
+  alle Checks, Judge-Scores und Metriken; dazu der vollständige Config-Dump
+  (Provenienz: welcher Lauf entstand aus welcher Konfiguration).
+
+Die Spalten der Tabelle:
+
+| Spalte | Bedeutung |
+|---|---|
+| Erfolg (Checks) | Anteil der Läufe, in denen **alle** deterministischen Checks bestanden (richtiges Tool, richtige Argumente, keine verbotenen Tools) — die harte Metrik |
+| Ziel erreicht (Judge) | LLM-Judge: wurde das Kundenanliegen erledigt? (in % der Läufe) |
+| Faithfulness | 1–5: sind Faktenaussagen durch Tool-Ergebnisse gedeckt? Niedrig = Halluzination |
+| Dialog / Voice | 1–5: Gesprächsführung / Eignung für Sprachausgabe |
+| Turn-Latenz p50/p95 | Dauer eines kompletten Assistenten-Turns (inkl. aller Agenten- und Tool-Schritte) |
+| TTFT p50/p95 | Time-to-First-Token — der Proxy für die **gefühlte** Latenz am Telefon/im Auto |
+| Ø Tokens, Kosten | Verbrauch pro Konversation, Kosten geschätzt nach Listenpreisen |
+
+**Bei der Fehlersuche** immer in dieser Reihenfolge lesen: fehlgeschlagene Checks in
+`summary.md` → zugehöriges Transkript und Tool-Log in `results.json` → (falls
+Langfuse aktiv) den Trace öffnen, um zu sehen, an welcher Stelle — Orchestrator-
+Routing, Agenten-Toolwahl oder Argumente — es gescheitert ist.
+
+---
+
+## 4. Konfigurationen vergleichen
+
+Das ist der Kern-Workflow des Systems. Drei Schritte:
+
+**Schritt 1 — Vergleichskonfiguration anlegen.** Kopie der Baseline, **genau eine
+Dimension ändern**, sprechend benennen:
+
+```bash
+cp configs/baseline.yaml configs/sonnet5.yaml
+```
+
+```yaml
+# configs/sonnet5.yaml — nur diese zwei Zeilen ändern:
+id: sonnet5
+model: claude-sonnet-5
+```
+
+Wichtig: `simulator.model` und `judge.model` unverändert lassen! Sonst vergleichst
+du nicht nur Assistenten, sondern auch unterschiedliche Kunden und Bewerter.
+
+**Schritt 2 — beide Zellen mit identischen Bedingungen laufen lassen** (gleiche
+Szenarien, gleiche Wiederholungszahl, mindestens 3 wegen Nichtdeterminismus):
+
+```bash
+python -m agent_eval run --config configs/baseline.yaml --reps 3
+python -m agent_eval run --config configs/sonnet5.yaml  --reps 3
+```
+
+**Schritt 3 — Vergleichsreport erzeugen:**
+
+```bash
+python -m agent_eval report \
+    results/baseline-opus5/results.json \
+    results/sonnet5/results.json
+```
+
+Das ergibt **eine** Tabelle mit einer Zeile pro Konfiguration — Qualität, Latenz
+und Kosten direkt nebeneinander. Genauso vergleichst du drei oder fünf Zellen:
+einfach mehr `results.json`-Pfade anhängen.
+
+Dasselbe Muster für die anderen Dimensionen:
+
+| Fragestellung | Was du variierst |
+|---|---|
+| Modellvergleich | `model:` (siehe oben) |
+| Kontexteffekt | `context.customer_context: none/minimal/full` |
+| Prompt-Variante | neue Datei `prompts/concierge-v2.md`, Config zeigt darauf |
+| Tool-Beschreibungen | Kopie von `mcp/crm-server.yaml` mit anderen Beschreibungen |
+| Tool-Untermenge | `mcp: [{server: ..., tools: [get_customer, get_invoices]}]` |
+| Agenten-Zuschnitt | andere/mehr/weniger Cards in `agents:` |
+| Latenz-Hebel | `sampling.effort: low` vs. `medium` |
+| Lokal vs. API | `model: ollama/qwen3:14b` (siehe README, Abschnitt Ollama) |
+
+**Interpretationsregeln:** Bei kleinen Stichproben (3–5 Wiederholungen × wenige
+Szenarien) sind Unterschiede von 10–20 Prozentpunkten Erfolgsquote noch Rauschen.
+Erst Differenzen deutlich außerhalb der Streuung ernst nehmen — im Zweifel
+Wiederholungen erhöhen. Latenz-Perzentile zwischen lokalen Modellen und API nicht
+direkt vergleichen (Hardware!), und Kosten von `ollama/`-Modellen sind immer 0.
+
+---
+
+## 5. Szenarien vergleichen
+
+Zwei verschiedene Fragen, zwei Werkzeuge:
+
+**a) „In welchen Szenarien versagt eine Konfiguration?"** — die Aufschlüsselung
+pro Szenario:
+
+```bash
+python -m agent_eval report --by-scenario \
+    results/baseline-opus5/results.json \
+    results/sonnet5/results.json
+```
+
+Das ergibt zusätzlich eine Tabelle Konfiguration × Szenario. Typisches Muster:
+Gesamt-Erfolgsquoten sehen ähnlich aus, aber das kleine Modell bricht genau bei
+den `kombi-*`-Szenarien (Mehrfach-Delegation) ein, während einfache Einzelaufträge
+funktionieren — das siehst du nur in dieser Ansicht. Darunter listet der Report
+jeden fehlgeschlagenen Check mit Szenario und Laufnummer.
+
+**b) „Welche Szenario-Art ist generell schwer?"** — gezielt Teilmengen laufen lassen:
+
+```bash
+# nur ein Szenario, dafür oft (Stabilität einer Problemstelle messen)
+python -m agent_eval run --config configs/baseline.yaml \
+    --scenarios scenarios/rechnungs-reklamation.yaml --reps 10
+
+# nur eine Domänen-Teilmenge (Auto: nur Klima + Kombi generieren und testen)
+python -m agent_eval.scenario_gen --count 10 --domains klima,kombi --out scenarios/auto-schwer
+python -m agent_eval run --config configs/auto-baseline.yaml --scenarios scenarios/auto-schwer
+```
+
+In **Langfuse** geht dieselbe Analyse interaktiv: jeder Trace trägt die Tags
+`<config-id>` und `<scenario-id>` sowie Metadaten (`config_id`, `model`,
+`scenario`, `rep`). Nach Szenario filtern, Scores (`checks_passed`,
+`goal_achieved`, `faithfulness`) danebenlegen, und per Klick in den Trace die
+fehlgeschlagene Stelle im Gesprächsverlauf ansehen.
+
+---
+
+## 6. Eigene Konfiguration anlegen — Checkliste
+
+1. `cp configs/baseline.yaml configs/<name>.yaml`
+2. `id:` auf den Dateinamen setzen (bestimmt `results/<id>/` und die Langfuse-Tags)
+3. Genau **eine** Dimension ändern (sonst weißt du nachher nicht, was gewirkt hat)
+4. Bei geänderten Artefakten: neue Datei statt Edit der alten (`prompts/...-v2.md`),
+   damit alte Experimente reproduzierbar bleiben
+5. Validieren ohne Kosten: `python -m agent_eval run --config configs/<name>.yaml --reps 1 --fake`
+6. Stolperfalle: `sampling.effort` wird von `claude-haiku-4-5` nicht unterstützt
+   (Zeile weglassen); bei `ollama/`-Modellen wird es ignoriert
+7. Neues Modell? Preise in `PRICES` (`src/agent_eval/report.py`) ergänzen
+8. Committen — der PR-Smoke-Test validiert die Config automatisch
+
+## 7. Eigene Szenarien anlegen
+
+Entweder von Hand (Format siehe README, „Neues Szenario anlegen") oder für die
+Auto-Domäne generieren:
+
+```bash
+python -m agent_eval.scenario_gen --count 20 --out scenarios/auto --seed 42
+```
+
+Regeln für gute Szenarien: `opening_message` fixieren (reduziert Varianz),
+Erfolgskriterien **gegen das Tool-Log** formulieren (nicht gegen Formulierungen),
+`with_args`-Muster tolerant halten (`"R-2024-*"`, `"*bella*"` — Matching ist
+case-insensitiv), und auch Negativ-Szenarien einplanen (`forbidden_tools`:
+was der Assistent gerade *nicht* tun soll).
+
+Gleicher `--seed` ⇒ identisches Set. Für Vergleiche gilt: **Szenarien-Set
+einfrieren** (committen) und alle Konfigurationen gegen dasselbe Set messen —
+niemals Set und Konfiguration gleichzeitig ändern.
+
+## 8. Vergleich in der CI
+
+Der Workflow (`.github/workflows/eval.yml`) macht bei jedem PR den Smoke-Test und
+— wenn `ANTHROPIC_API_KEY` als Repo-Secret gesetzt ist — einen echten Messlauf
+(1 Wiederholung), dessen Tabelle im Job-Summary erscheint und dessen Rohdaten als
+Artefakt `eval-results` herunterladbar sind. Manuell mit anderer Config starten:
+GitHub → Actions → „Eval" → *Run workflow* → Config-Pfad und Wiederholungen angeben.
+
+So wird jeder Prompt-/Card-/Tool-PR automatisch zum Mini-Experiment: Tabelle im
+PR ansehen, mit dem letzten Baseline-Lauf vergleichen, erst dann mergen.
+
+## 9. Häufige Probleme
+
+| Symptom | Ursache / Lösung |
+|---|---|
+| `400` mit Hinweis auf `effort`/`output_config` | Modell unterstützt kein `effort` (z. B. Haiku) → Zeile aus `sampling` entfernen |
+| Abbruch beim Start: API-Key | `ANTHROPIC_API_KEY` nicht exportiert (`.env` wird nicht automatisch geladen) |
+| `Connection refused` bei `ollama/`-Modell | `ollama serve` läuft nicht bzw. `OLLAMA_HOST` falsch; Modell mit `ollama pull` holen |
+| Judge-Spalten zeigen `–` | Lauf mit `--no-judge` oder `--fake`, oder Judge-Aufruf fehlgeschlagen (stdout prüfen) |
+| Keine Traces in Langfuse | `LANGFUSE_*`-Keys fehlen/falsch — der Runner läuft dann bewusst ohne Tracing weiter |
+| Ergebnisse schwanken stark | Normal bei kleinen N — Wiederholungen erhöhen, Streuung mitbetrachten |

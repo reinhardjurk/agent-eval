@@ -28,6 +28,9 @@ Konfiguration (configs/*.yaml)          Szenario (scenarios/*.yaml)
            └────────────► results.json + summary.md ◄──────
 ```
 
+> 📘 **Ausführliche Schritt-für-Schritt-Anleitung** — inklusive Vergleichs-Workflows
+> für Konfigurationen und Szenarien: [docs/ANLEITUNG.md](docs/ANLEITUNG.md)
+
 ## Quickstart
 
 ```bash

@@ -31,6 +31,8 @@ def main() -> None:
 
     cmp = sub.add_parser("report", help="Mehrere results.json zu einer Vergleichstabelle mergen")
     cmp.add_argument("results", nargs="+", help="Pfade zu results.json-Dateien")
+    cmp.add_argument("--by-scenario", action="store_true",
+                     help="Zusaetzlich Aufschluesselung pro Szenario ausgeben")
 
     args = parser.parse_args()
     if args.command == "run":
@@ -38,7 +40,10 @@ def main() -> None:
                        fake=args.fake, judge_enabled=not args.no_judge)
     elif args.command == "report":
         payloads = [json.loads(Path(p).read_text(encoding="utf-8")) for p in args.results]
-        markdown = report.render_summary(payloads) + report.render_failures(payloads)
+        markdown = report.render_summary(payloads)
+        if args.by_scenario:
+            markdown += report.render_by_scenario(payloads)
+        markdown += report.render_failures(payloads)
         report.append_step_summary(markdown)
         print(markdown)
 

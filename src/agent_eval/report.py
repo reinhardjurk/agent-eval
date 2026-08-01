@@ -104,6 +104,39 @@ def render_summary(payloads: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def render_by_scenario(payloads: list[dict]) -> str:
+    """Aufschluesselung Konfiguration x Szenario — zeigt, WO eine Konfiguration
+    gewinnt oder verliert, statt nur des Gesamtdurchschnitts."""
+    lines = [
+        "## Ergebnisse pro Szenario",
+        "",
+        "| Konfiguration | Szenario | Runs | Erfolg (Checks) | Ziel erreicht (Judge) | Ø Turns | TTFT p50 s | Ø Tokens in/out |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for payload in payloads:
+        cfg = payload["config"]
+        by_scenario: dict[str, list[dict]] = {}
+        for run in payload["runs"]:
+            by_scenario.setdefault(run["scenario"], []).append(run)
+        for scenario_id in sorted(by_scenario):
+            runs = by_scenario[scenario_id]
+            judged = [r for r in runs if r.get("success") is not None]
+            success = (100.0 * sum(1 for r in judged if r["success"]) / len(judged)
+                       if judged else None)
+            ttfts = [t for r in runs for t in r["metrics"]["ttfts"]]
+            lines.append(
+                f"| {cfg['id']} | {scenario_id} | {len(runs)} "
+                f"| {_pct(success)} "
+                f"| {_pct(_judge_mean(runs, 'goal_achieved'))} "
+                f"| {mean(r['metrics']['turns'] for r in runs):.1f} "
+                f"| {_fmt(percentile(ttfts, 50))} "
+                f"| {mean(r['metrics']['input_tokens'] for r in runs):.0f}"
+                f"/{mean(r['metrics']['output_tokens'] for r in runs):.0f} |"
+            )
+    lines.append("")
+    return "\n".join(lines)
+
+
 def render_failures(payloads: list[dict]) -> str:
     lines: list[str] = []
     for payload in payloads:
