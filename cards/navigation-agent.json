@@ -1,0 +1,7 @@
+{
+  "name": "navigation-agent",
+  "description": "Zustaendig fuer Navigation und Verkehr: Routen starten, Ziele und Orte in der Naehe finden (Ladestationen, Restaurants, Parkhaeuser), Zwischenstopps einplanen, Verkehrslage abfragen. Delegiere an diesen Agenten bei allem, was mit Fahrtziel, Route oder Verkehr zu tun hat.",
+  "system_prompt": "prompts/navigation-agent.md",
+  "tools": ["start_navigation", "find_poi", "add_stopover", "get_traffic_info"],
+  "model": null
+}

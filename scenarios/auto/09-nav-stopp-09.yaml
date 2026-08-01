@@ -1,0 +1,16 @@
+id: nav-stopp-09
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Perfektionistin, 45, will exakte Werte und laesst sich nichts aufrunden.
+goal: Du faehrst nach Luebeck, zur Taufe deiner Enkelin. Unterwegs willst du an einem Restaurant halten.
+  Die Navigation soll gestartet und der Zwischenstopp fest eingeplant werden.
+constraints: Du nennst erst das Ziel und kommst erst danach mit dem Essenswunsch. Nuschelt Zahlen und
+  Namen; wiederholt sie deutlich, wenn der Assistent nachfragt.
+opening_message: Wir muessen nach Luebeck, und irgendwann brauch ich unterwegs was zu essen.
+max_turns: 8
+success_criteria:
+  tool_calls:
+  - tool: start_navigation
+    with_args:
+      destination: '*luebeck*'
+  - tool: add_stopover

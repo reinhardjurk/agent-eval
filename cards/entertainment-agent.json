@@ -1,0 +1,7 @@
+{
+  "name": "entertainment-agent",
+  "description": "Zustaendig fuer Medien und Unterhaltung: Musik, Playlists und Podcasts abspielen, Radiosender einstellen, Lautstaerke regeln. Delegiere an diesen Agenten bei allem, was mit Musik, Radio, Podcasts oder Lautstaerke zu tun hat.",
+  "system_prompt": "prompts/entertainment-agent.md",
+  "tools": ["play_media", "tune_radio", "set_volume"],
+  "model": null
+}

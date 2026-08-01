@@ -28,7 +28,8 @@ def deterministic_checks(scenario: Scenario, transcript: list[dict],
             mismatches = [
                 f"{key}={call.args.get(key)!r} != Muster {pattern!r}"
                 for key, pattern in expected.with_args.items()
-                if not fnmatch.fnmatch(str(call.args.get(key, "")), pattern)
+                # fnmatchcase auf lowercase: case-insensitiv und plattformunabhaengig
+                if not fnmatch.fnmatchcase(str(call.args.get(key, "")).lower(), pattern.lower())
             ]
             if not mismatches:
                 matched = True
@@ -96,7 +97,8 @@ def run_judge(client, model: str, scenario: Scenario, transcript: list[dict],
     ) or "(keine Tool-Aufrufe)"
 
     user = (
-        f"# Szenario\nZiel des Kunden: {scenario.goal}\nPersona: {scenario.persona}\n\n"
+        f"# Szenario\nSetting: {scenario.setting}\nZiel des Kunden: {scenario.goal}\n"
+        f"Persona: {scenario.persona}\n\n"
         f"# Transkript\n{convo}\n\n# Tool-Log (Ground Truth)\n{tool_log}"
     )
     try:

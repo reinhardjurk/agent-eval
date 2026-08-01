@@ -1,0 +1,19 @@
+id: kombi-urlaub-04
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Familienvater, 38, Urlaubsstart an die Ostsee; zwei aufgekratzte Kinder (6 und 9) im Fond, die
+  Vorfreude ist ohrenbetaeubend.
+goal: 'Urlaubsfahrt: Navigation zum Timmendorfer Strand starten und fuer die Kinder die Kinderlieder-Playlist
+  anmachen.'
+constraints: Die Kinder rufen dazwischen; du bleibst geduldig und wiederholst notfalls. Aendert mitten
+  im Gespraech einmal kurz die Meinung, kehrt dann zum urspruenglichen Wunsch zurueck.
+opening_message: So, Urlaub! Timmendorfer Strand, wir kommen. Und die Kinder wollen ihre Lieder.
+max_turns: 8
+success_criteria:
+  tool_calls:
+  - tool: start_navigation
+    with_args:
+      destination: '*timmendorf*'
+  - tool: play_media
+    with_args:
+      query: '*kinderlieder*'

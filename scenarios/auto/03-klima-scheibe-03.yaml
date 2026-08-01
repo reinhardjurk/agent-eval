@@ -1,0 +1,12 @@
+id: klima-scheibe-03
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Gut gelaunter Taxifahrer, 51, plaudert gern, kommt aber immer wieder zum Anliegen zurueck.
+goal: Die Frontscheibe ist ploetzlich komplett beschlagen, du siehst kaum noch etwas. Die Scheibe soll
+  SOFORT enteist werden, ohne Diskussion.
+constraints: Du bist in einer akuten Stresssituation und wirst laut, wenn Rueckfragen kommen.
+opening_message: Ich seh nichts mehr! Die Scheibe ist total beschlagen, mach was!
+max_turns: 4
+success_criteria:
+  tool_calls:
+  - tool: activate_defrost

@@ -1,0 +1,112 @@
+# Mock-MCP-Server "car": Fahrzeugfunktionen (Navigation, Entertainment, Klima).
+name: car
+fixtures: fixtures/car.json
+tools:
+  - name: start_navigation
+    description: "Startet die Navigation zu einem Ziel (Ort, Adresse oder POI-Name) und liefert Distanz und Ankunftszeit."
+    handler: start_navigation
+    input_schema:
+      type: object
+      properties:
+        destination:
+          type: string
+          description: "Zielort, z.B. 'Heidelberg' oder 'Trattoria Bella Vista'"
+      required: [destination]
+
+  - name: find_poi
+    description: "Sucht Orte in der Naehe nach Kategorie: ladestation, restaurant, parkhaus, tankstelle, apotheke."
+    handler: find_poi
+    input_schema:
+      type: object
+      properties:
+        category:
+          type: string
+          description: "Kategorie, z.B. 'ladestation'"
+      required: [category]
+
+  - name: add_stopover
+    description: "Plant einen Zwischenstopp in die AKTIVE Route ein. Erfordert, dass vorher eine Navigation gestartet wurde."
+    handler: add_stopover
+    input_schema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Name des Zwischenziels, z.B. 'Autohof Schnitzelstube'"
+      required: [name]
+
+  - name: get_traffic_info
+    description: "Liefert aktuelle Verkehrsstoerungen auf der aktiven Route bzw. im Umfeld."
+    handler: get_traffic_info
+    input_schema:
+      type: object
+      properties: {}
+
+  - name: play_media
+    description: "Sucht in der Mediathek (Songs, Playlists, Podcasts) und startet die Wiedergabe des besten Treffers."
+    handler: play_media
+    input_schema:
+      type: object
+      properties:
+        query:
+          type: string
+          description: "Suchbegriff, z.B. Titel, Interpret oder Playlist-Name"
+      required: [query]
+
+  - name: set_volume
+    description: "Setzt die Medienlautstaerke auf eine Stufe von 0 (stumm) bis 10 (maximal)."
+    handler: set_volume
+    input_schema:
+      type: object
+      properties:
+        level:
+          type: integer
+          description: "Lautstaerke 0-10"
+      required: [level]
+
+  - name: tune_radio
+    description: "Stellt einen Radiosender ein. Verfuegbar: Antenne Nord (Pop), Klassik Plus, Power FM (Rock), Info 24 (Nachrichten)."
+    handler: tune_radio
+    input_schema:
+      type: object
+      properties:
+        station:
+          type: string
+          description: "Sendername"
+      required: [station]
+
+  - name: set_temperature
+    description: "Setzt die Klimaanlagen-Zieltemperatur (16-28 Grad) fuer eine Zone oder alle Zonen."
+    handler: set_temperature
+    input_schema:
+      type: object
+      properties:
+        zone:
+          type: string
+          enum: [fahrer, beifahrer, hinten, alle]
+          description: "Klimazone"
+        celsius:
+          type: number
+          description: "Zieltemperatur in Grad Celsius (16-28)"
+      required: [zone, celsius]
+
+  - name: set_seat_heating
+    description: "Setzt die Sitzheizung fuer Fahrer- oder Beifahrersitz auf Stufe 0 (aus) bis 3 (maximal)."
+    handler: set_seat_heating
+    input_schema:
+      type: object
+      properties:
+        seat:
+          type: string
+          enum: [fahrer, beifahrer]
+        level:
+          type: integer
+          description: "Stufe 0-3"
+      required: [seat, level]
+
+  - name: activate_defrost
+    description: "Aktiviert sofort die Scheibenenteisung (Frontscheibe). Sicherheitsrelevant, bei beschlagenen Scheiben ohne Rueckfrage ausfuehren."
+    handler: activate_defrost
+    input_schema:
+      type: object
+      properties: {}

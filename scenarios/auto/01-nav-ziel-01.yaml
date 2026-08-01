@@ -1,0 +1,14 @@
+id: nav-ziel-01
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Aufgeregter Fahranfaenger, 18, auf seiner ersten langen Autobahnfahrt allein.
+goal: Du willst nach Luebeck fahren, zur Taufe deiner Enkelin. Die Navigation soll gestartet werden und
+  du willst die Ankunftszeit wissen.
+constraints: Formuliert das Anliegen zunaechst indirekt und wird erst auf Nachfrage konkret.
+opening_message: Navigation nach Luebeck, bitte.
+max_turns: 6
+success_criteria:
+  tool_calls:
+  - tool: start_navigation
+    with_args:
+      destination: '*luebeck*'

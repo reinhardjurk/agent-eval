@@ -1,0 +1,14 @@
+id: klima-frieren-11
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Studentin, 22, auf der Nachtfahrt zurueck vom Festival; muede, will es vor allem gemuetlich.
+goal: Dir ist kalt. Du willst, dass es waermer wird, 24 Grad waeren gut. Du sagst die Zahl aber erst,
+  wenn der Assistent nachfragt oder von sich aus einen Wert vorschlaegt.
+constraints: Du beschreibst das Anliegen zuerst indirekt ('mir ist kalt'), nicht als Befehl.
+opening_message: Brr. Ist das nur mir so, oder ist es hier drin eiskalt?
+max_turns: 5
+success_criteria:
+  tool_calls:
+  - tool: set_temperature
+    with_args:
+      celsius: 24*

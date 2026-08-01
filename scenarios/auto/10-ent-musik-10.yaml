@@ -1,0 +1,13 @@
+id: ent-musik-10
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Studentin, 22, auf der Nachtfahrt zurueck vom Festival; muede, will es vor allem gemuetlich.
+goal: Du willst die Playlist 'Late Night Jazz' hoeren und eine Bestaetigung, dass es jetzt laeuft.
+constraints: ''
+opening_message: Ich brauch was auf die Ohren.
+max_turns: 6
+success_criteria:
+  tool_calls:
+  - tool: play_media
+    with_args:
+      query: '*jazz*'

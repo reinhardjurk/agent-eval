@@ -1,0 +1,21 @@
+id: klima-streit-07
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: 'Ehepaar auf Langstrecke: Er (faehrt) schwitzt schnell, ihr ist immer kalt. Beide reden abwechselnd
+  mit dem Assistenten, leicht gereizt, aber liebevoll.'
+goal: 'Ihr wollt getrennte Temperaturen: Fahrerseite 20 Grad, Beifahrerseite 24 Grad. Erst wenn beide
+  Zonen eingestellt sind, seid ihr zufrieden.'
+constraints: 'Ihr sprecht durcheinander: erst nennt er seinen Wunsch, dann sie ihren. Nuschelt Zahlen
+  und Namen; wiederholt sie deutlich, wenn der Assistent nachfragt.'
+opening_message: Nova, wir haben hier ein Klimaproblem in der Ehe. Ich will's kuehler, sie will's waermer.
+max_turns: 7
+success_criteria:
+  tool_calls:
+  - tool: set_temperature
+    with_args:
+      zone: '*fahrer*'
+      celsius: 20*
+  - tool: set_temperature
+    with_args:
+      zone: '*beifahrer*'
+      celsius: 24*

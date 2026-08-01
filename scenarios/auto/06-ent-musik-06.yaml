@@ -1,0 +1,15 @@
+id: ent-musik-06
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Resolute Grossmutter, 68, auf dem Beifahrersitz; der Fahrer soll sich aufs Fahren konzentrieren,
+  also uebernimmt sie das Reden.
+goal: Du willst 'Atemlos durch die Nacht' von Helene Fischer hoeren und eine Bestaetigung, dass es jetzt
+  laeuft.
+constraints: Formuliert das Anliegen zunaechst indirekt und wird erst auf Nachfrage konkret.
+opening_message: Ich brauch was auf die Ohren.
+max_turns: 6
+success_criteria:
+  tool_calls:
+  - tool: play_media
+    with_args:
+      query: '*atemlos*'

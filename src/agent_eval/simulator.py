@@ -8,7 +8,9 @@ from .tracing import Tracer
 
 DONE_MARKER = "[DONE]"
 
-SYSTEM_TEMPLATE = """Du simulierst einen Kunden, der beim telefonischen Kundenservice anruft.
+SYSTEM_TEMPLATE = """Du simulierst eine Person in einem Sprachdialog mit einem Assistenten.
+
+Setting: {setting}
 
 Persona: {persona}
 
@@ -29,6 +31,7 @@ class UserSimulator:
         self.llm = llm
         self.tracer = tracer
         self.system = SYSTEM_TEMPLATE.format(
+            setting=scenario.setting,
             persona=scenario.persona,
             goal=scenario.goal,
             constraints=scenario.constraints or "unauffaellig, kooperativ",

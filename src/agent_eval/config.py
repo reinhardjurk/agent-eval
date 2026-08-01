@@ -88,6 +88,7 @@ class SuccessCriteria(BaseModel):
 
 class Scenario(BaseModel):
     id: str
+    setting: str = "Du rufst als Kunde beim telefonischen Kundenservice an."
     persona: str
     goal: str
     constraints: str = ""

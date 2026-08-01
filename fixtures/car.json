@@ -1,0 +1,45 @@
+{
+  "vehicle": {
+    "active_route": null,
+    "now_playing": null,
+    "volume": 4,
+    "climate": {"fahrer": 20.0, "beifahrer": 20.0, "hinten": 20.0},
+    "seat_heating": {},
+    "defrost": false,
+    "outside_temp_c": 6.5,
+    "battery_percent": 62
+  },
+  "pois": {
+    "ladestation": [
+      {"name": "Ionity Ladepark Rasthof Nord", "distance_km": 4.2, "frei": 3, "leistung_kw": 350},
+      {"name": "Stadtwerke Schnelllader Zentrum", "distance_km": 7.8, "frei": 1, "leistung_kw": 150}
+    ],
+    "restaurant": [
+      {"name": "Autohof Schnitzelstube", "distance_km": 3.1, "bewertung": 4.1},
+      {"name": "Trattoria Bella Vista", "distance_km": 9.4, "bewertung": 4.6}
+    ],
+    "parkhaus": [
+      {"name": "Parkhaus Altstadt", "distance_km": 0.8, "freie_plaetze": 46}
+    ],
+    "tankstelle": [
+      {"name": "Aral Hauptstrasse", "distance_km": 1.9}
+    ],
+    "apotheke": [
+      {"name": "Rosen-Apotheke", "distance_km": 2.4, "notdienst": true}
+    ]
+  },
+  "media": [
+    {"titel": "Bohemian Rhapsody", "interpret": "Queen", "typ": "song"},
+    {"titel": "Atemlos durch die Nacht", "interpret": "Helene Fischer", "typ": "song"},
+    {"titel": "Die 30 besten Kinderlieder", "interpret": "Kinderchor Sonnenschein", "typ": "playlist"},
+    {"titel": "Late Night Jazz", "interpret": "Various Artists", "typ": "playlist"},
+    {"titel": "Kaltblut", "interpret": "True-Crime-Podcast, Folge 87", "typ": "podcast"},
+    {"titel": "Entspannte Fahrt", "interpret": "Various Artists", "typ": "playlist"}
+  ],
+  "radio": [
+    {"sender": "Antenne Nord", "genre": "Pop"},
+    {"sender": "Klassik Plus", "genre": "Klassik"},
+    {"sender": "Power FM", "genre": "Rock"},
+    {"sender": "Info 24", "genre": "Nachrichten"}
+  ]
+}

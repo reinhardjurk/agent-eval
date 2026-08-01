@@ -1,0 +1,7 @@
+{
+  "name": "comfort-agent",
+  "description": "Zustaendig fuer Klima und Komfort: Innenraumtemperatur pro Zone einstellen, Sitzheizung regeln, Scheiben enteisen. Delegiere an diesen Agenten bei allem, was mit Temperatur, Frieren/Schwitzen, Sitzheizung oder beschlagenen Scheiben zu tun hat. Beschlagene Scheiben sind sicherheitsrelevant und haben Vorrang.",
+  "system_prompt": "prompts/comfort-agent.md",
+  "tools": ["set_temperature", "set_seat_heating", "activate_defrost"],
+  "model": null
+}

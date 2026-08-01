@@ -1,0 +1,21 @@
+id: kombi-date-12
+setting: Du sitzt im Auto (als Fahrer oder Beifahrer) und sprichst per Sprachsteuerung mit 'Nova', dem
+  Sprachassistenten des Fahrzeugs.
+persona: Nervoeser Mittdreissiger auf dem Weg zum ersten Date seit Jahren; redet zu viel, wenn er aufgeregt
+  ist.
+goal: 'Du willst drei Dinge: Navigation zur ''Trattoria Bella Vista'', entspannte Musik gegen die Nervositaet,
+  und angenehme 22 Grad im Auto. Erst wenn alles drei erledigt ist, bist du zufrieden.'
+constraints: Du nennst die Wuensche nacheinander, nicht alle auf einmal.
+opening_message: 'Nova, heute muss alles perfekt sein. Erstmal: bring mich zur Trattoria Bella Vista.'
+max_turns: 10
+success_criteria:
+  tool_calls:
+  - tool: start_navigation
+    with_args:
+      destination: '*bella*'
+  - tool: play_media
+    with_args:
+      query: '*entspann*'
+  - tool: set_temperature
+    with_args:
+      celsius: 22*

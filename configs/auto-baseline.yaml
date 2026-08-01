@@ -1,0 +1,28 @@
+# Baseline fuer die Automotive-Domaene (In-Car-Sprachassistent "Nova").
+# Szenarien dazu: scenarios/auto/ (generiert via python -m agent_eval.scenario_gen)
+id: auto-baseline-opus5
+model: claude-opus-5
+
+agents:
+  - cards/navigation-agent.json
+  - cards/entertainment-agent.json
+  - cards/comfort-agent.json
+
+mcp:
+  - server: mcp/car-server.yaml
+
+context:
+  system_prompt: prompts/car-concierge.md
+  customer_context: none    # im Fahrzeug gibt es keinen CRM-Kundenkontext
+
+sampling:
+  max_tokens: 1024
+  effort: low               # Cockpit: Latenz zaehlt
+
+simulator:
+  model: claude-opus-5
+
+judge:
+  model: claude-opus-5
+
+repetitions: 3

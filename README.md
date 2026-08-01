@@ -140,6 +140,28 @@ Zwei Betriebsarten:
 Benötigte Repo-Secrets: `ANTHROPIC_API_KEY`, optional `LANGFUSE_PUBLIC_KEY`,
 `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`.
 
+## Zweite Domäne: In-Car-Sprachassistent (Automotive)
+
+Neben der Telco-Domäne gibt es eine komplette Fahrzeug-Domäne (Assistent „Nova":
+Navigation, Entertainment, Klima) mit eigenen Agent Cards, Tools
+([mcp/car-server.yaml](mcp/car-server.yaml)) und Config
+([configs/auto-baseline.yaml](configs/auto-baseline.yaml)).
+
+Die Dialogszenarien dafür erzeugt ein Generator — Menge, Seed und Domänen konfigurierbar:
+
+```bash
+python -m agent_eval.scenario_gen --count 20 --out scenarios/auto --seed 42
+python -m agent_eval.scenario_gen --count 6 --domains klima,kombi
+python -m agent_eval run --config configs/auto-baseline.yaml --scenarios scenarios/auto
+```
+
+Der Generator kombiniert Dialog-Blueprints (z. B. Reichweitenangst, beschlagene
+Scheibe, Klimazonen-Streit auf Langstrecke, Erstes-Date-Kombiauftrag) mit Persona-
+und Eigenheiten-Pools; gleiche Seeds erzeugen identische Sets (reproduzierbare
+Messreihen). Ein committetes Grundset von 12 Dialogen liegt unter
+[scenarios/auto/](scenarios/auto/). `kombi`-Szenarien erwarten mehrere Tool-Aufrufe
+über Agentengrenzen hinweg und testen damit gezielt das Routing des Orchestrators.
+
 ## Neues Szenario anlegen
 
 `scenarios/<name>.yaml` — Persona/Ziel/Verhalten steuern den User-Simulator,
