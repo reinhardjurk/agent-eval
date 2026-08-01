@@ -52,7 +52,15 @@ def _make_llm_factory(client, exp: ResolvedExperiment, fake: bool):
 def run_conversation(exp: ResolvedExperiment, scenario: Scenario, rep: int, client,
                      tracer: Tracer, fake: bool, judge_enabled: bool) -> dict:
     runtime = MockToolRuntime(copy.deepcopy(exp.fixtures))
-    assistant = MultiAgentAssistant(exp, _make_llm_factory(client, exp, fake), runtime, tracer)
+    if exp.config.assistant.type == "http" and not fake:
+        from .http_assistant import HttpAssistant
+
+        assistant = HttpAssistant(exp.config.assistant, runtime, tracer,
+                                  model_label=exp.config.model)
+    else:
+        # fake erzwingt den eingebauten Pfad (Pipeline-Test ohne externe Systeme)
+        assistant = MultiAgentAssistant(exp, _make_llm_factory(client, exp, fake),
+                                        runtime, tracer)
 
     # Simulator: kleines Budget + think=False, damit Thinking-Modelle nicht das
     # gesamte Token-Kontingent verdenken und leere Antworten liefern
@@ -71,9 +79,11 @@ def run_conversation(exp: ResolvedExperiment, scenario: Scenario, rep: int, clie
     metadata = {
         "config_id": exp.config.id,
         "model": exp.config.model,
+        "assistant": exp.config.assistant.type,
         "scenario": scenario.id,
         "rep": rep,
-        "customer_context": exp.config.context.customer_context,
+        "customer_context": (exp.config.context.customer_context
+                             if exp.config.context else "none"),
     }
     with tracer.conversation(trace_name, metadata=metadata,
                              tags=[exp.config.id, scenario.id],
@@ -150,8 +160,10 @@ def run_experiment(config_path: str | Path, scenarios_path: str | Path,
     # Anthropic-Client nur, wenn mindestens eine Rolle ein Claude-Modell nutzt.
     client = None
     if not fake:
-        models = [exp.config.model, exp.config.simulator.model]
-        models += [card.model or exp.config.model for card in exp.cards]
+        models = [exp.config.simulator.model]
+        if exp.config.assistant.type == "builtin":
+            models.append(exp.config.model)
+            models += [card.model or exp.config.model for card in exp.cards]
         if judge_enabled or any(not is_ollama_model(m) for m in models):
             import anthropic
 

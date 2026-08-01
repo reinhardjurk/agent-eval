@@ -23,8 +23,8 @@ PRICES: dict[str, tuple[float, float]] = {
 
 
 def price_for(model: str) -> tuple[float, float]:
-    if model.startswith("ollama/"):
-        return (0.0, 0.0)  # lokale Modelle: keine API-Kosten
+    if model.startswith(("ollama/", "extern/")):
+        return (0.0, 0.0)  # lokale/externe Systeme: keine hier bekannten API-Kosten
     best = ""
     for prefix in PRICES:
         if model.startswith(prefix) and len(prefix) > len(best):

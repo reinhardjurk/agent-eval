@@ -239,6 +239,44 @@ für Vergleiche brauchbar; darunter Rubrik im Judge-Prompt schärfen und erneut 
 7. Neues Modell? Preise in `PRICES` (`src/agent_eval/report.py`) ergänzen
 8. Committen — der PR-Smoke-Test validiert die Config automatisch
 
+## 6b. Echten Assistenten anbinden (HTTP)
+
+Der eingebaute Assistent ist nur der Referenz-Testkandidat — dein eigenes System
+bindest du über HTTP an. Es muss einen einzigen Endpoint implementieren
+(Vertrag: Docstring in [http_assistant.py](../src/agent_eval/http_assistant.py),
+lauffähige Referenz: [examples/http_assistant_stub.py](../examples/http_assistant_stub.py)):
+
+- **Request** vom Runner: `{"session_id": "<uuid>", "message": "<Kundentext>", "turn": 1}` —
+  die `session_id` ist pro Konversation stabil, dein Server hält den Gesprächszustand.
+- **Response**: `{"reply": "..."}` ist Pflicht. Optional: `tool_calls`
+  (`[{tool, args, result, agent}]` — **nötig, damit die deterministischen Checks
+  greifen**), `usage` (Tokens) und `ttft_s`.
+
+Konfiguration ([configs/extern-http.yaml](../configs/extern-http.yaml) als Vorlage):
+
+```yaml
+id: mein-assistent-v1
+model: extern/mein-assistent      # Label; Präfix extern/ ⇒ Kosten 0
+assistant:
+  type: http
+  url: http://localhost:8080/chat
+  # auth_env: MEIN_TOKEN          # Env-Var mit Bearer-Token, falls nötig
+simulator: {model: claude-opus-5}
+judge:     {model: claude-opus-5}
+```
+
+`agents`, `mcp` und `context` entfallen — das externe System bringt seine eigenen mit.
+Verdrahtung sofort testen, ohne dass dein Assistent schon existiert:
+
+```bash
+python examples/http_assistant_stub.py 8089        # Terminal 1
+python -m agent_eval run --config configs/extern-http.yaml --reps 1 --no-judge
+```
+
+Hinweise: Die Turn-Latenz ist die Wandzeit des HTTP-Aufrufs; TTFT gibt es nur,
+wenn dein Server `ttft_s` selbst misst und meldet. Szenarien müssen zu den Tools
+passen, die dein System tatsächlich meldet (`tool_calls[].tool`).
+
 ## 7. Eigene Szenarien anlegen
 
 Entweder von Hand (Format siehe README, „Neues Szenario anlegen") oder für die

@@ -1,0 +1,27 @@
+# Externer Assistent ueber HTTP: der Runner testet ein extern laufendes System
+# statt des eingebauten Referenz-Assistenten. Simulator, Checks, Judge, Tracing
+# und Report bleiben unveraendert.
+#
+# Vertrag (Request/Response-JSON): src/agent_eval/http_assistant.py (Docstring)
+# Referenz-Server zum Ausprobieren:  python examples/http_assistant_stub.py 8089
+#
+# Wichtig: Damit die deterministischen Checks greifen, muss der externe
+# Assistent seine Tool-Aufrufe im Response-Feld "tool_calls" mitliefern.
+id: extern-http
+model: extern/mein-assistent   # Praefix "extern/": nur Label, Kosten = 0
+
+assistant:
+  type: http
+  url: http://localhost:8089/chat
+  timeout_s: 120
+  # auth_env: MEIN_ASSISTENT_TOKEN   # Env-Var mit Bearer-Token, falls noetig
+
+# agents/mcp/context entfallen: das externe System bringt seine eigenen mit
+
+simulator:
+  model: claude-opus-5
+
+judge:
+  model: claude-opus-5
+
+repetitions: 3

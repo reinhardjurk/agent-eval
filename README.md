@@ -201,8 +201,8 @@ success_criteria:
 
 ## Roadmap / Erweiterungen
 
-- Anbindung eines echten Assistenten statt des eingebauten Referenz-Assistenten
-  (Interface: `respond(user_text) -> TurnResult` in `src/agent_eval/assistant.py`)
+- ✅ Anbindung eines echten Assistenten über HTTP (`assistant.type: http`,
+  siehe [Anleitung 6b](docs/ANLEITUNG.md) und `examples/http_assistant_stub.py`)
 - Echte MCP-Server (stdio/HTTP) statt In-Process-Mocks
 - Langfuse Datasets/Experiments für Vergleichsansichten direkt im UI
 - Latenzbudgets als harte Checks (z.B. TTFT p95 < 1,5 s)

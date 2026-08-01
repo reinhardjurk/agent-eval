@@ -15,6 +15,8 @@ def test_all_configs_load():
     assert configs, "keine Konfigurationen gefunden"
     for config_path in configs:
         exp = load_experiment(config_path)
+        if exp.config.assistant.type != "builtin":
+            continue  # externe Assistenten brauchen keine Cards/Prompts
         assert exp.cards, config_path
         assert exp.concierge_prompt.strip()
         for card in exp.cards:

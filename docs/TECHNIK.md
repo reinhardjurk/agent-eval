@@ -124,12 +124,32 @@ das Modell/der Server das Flag ablehnt — einmaliger Retry ohne Flag).
   Token-Summen über Orchestrator- und Agenten-Calls.
 
 **Anbindung eines echten Assistenten:** Der Runner benötigt nur ein Objekt mit
-`respond(user_text) -> TurnResult`. Ein externer Assistent (HTTP-Endpoint,
-anderes Framework) wird angebunden, indem man eine Klasse mit dieser Signatur
-schreibt und in `runner.run_conversation()` statt `MultiAgentAssistant`
-instanziiert; Checks, Judge, Tracing und Report bleiben unverändert. Einzige
-Zusatzanforderung für die deterministischen Checks: Tool-Aufrufe müssen ins
-`MockToolRuntime`-Log laufen (oder man ersetzt das Log durch das des echten Systems).
+`respond(user_text) -> TurnResult`. Für HTTP-erreichbare Systeme existiert ein
+fertiger Adapter (Abschnitt 3.3b); für andere Transporte schreibt man eine
+Klasse mit derselben Signatur und erweitert die Weiche in
+`runner.run_conversation()`. Einzige Zusatzanforderung für die deterministischen
+Checks: Tool-Aufrufe müssen ins `MockToolRuntime`-Log laufen.
+
+### 3.3b `http_assistant.py` — externer Assistent über HTTP
+
+Aktiviert per `assistant: {type: http, url: ...}` in der Config (`agents`,
+`mcp`, `context` entfallen dann; `model` ist nur noch Label, Konvention
+`extern/<name>` → Kosten 0). Pro Konversation erzeugt der Adapter eine frische
+`session_id` (UUID) — der externe Server hält den Gesprächszustand pro Session.
+
+| Richtung | JSON |
+|---|---|
+| Request (POST `url`) | `{"session_id", "message", "turn"}` |
+| Response | `{"reply"}` Pflicht; optional `"tool_calls": [{tool, args, result, agent}]`, `"usage": {input_tokens, output_tokens}`, `"ttft_s"` |
+
+Verhalten: `tool_calls` werden ins Check-Log übernommen (Objekt-`result`s werden
+für die `result_ok`-Prüfung JSON-serialisiert); ohne sie können tool-basierte
+Checks nicht bestehen — Transkript-Checks und Judge funktionieren trotzdem.
+Latenz misst der Runner als Wandzeit des POST; TTFT nur, wenn der Server
+`ttft_s` selbst meldet. Optionales Bearer-Token über `assistant.auth_env`
+(Name einer Env-Var). Referenzimplementierung des Vertrags:
+`examples/http_assistant_stub.py`; im Fake-Modus wird immer der eingebaute
+Assistent verwendet (Pipeline-Test ohne externe Systeme).
 
 ### 3.4 `mock_tools.py` — deterministisches Tool-Backend
 
@@ -282,7 +302,8 @@ repetitions: int
 | Ziel | Vorgehen |
 |---|---|
 | Neuer LLM-Provider (vLLM, OpenAI-kompatibel, …) | Klasse mit `complete()`-Interface analog `OllamaLLM`, Präfix-Weiche in `runner._build_llm()` erweitern, Preis in `PRICES` |
-| Echten Assistenten testen | Adapter mit `respond(user_text) -> TurnResult`, Instanziierung in `run_conversation()` tauschen (siehe 3.3) |
+| Echten Assistenten testen (HTTP) | fertig: `assistant: {type: http, url: ...}` — Vertrag siehe 3.3b |
+| Echten Assistenten testen (anderer Transport) | Adapter mit `respond(user_text) -> TurnResult`, Weiche in `run_conversation()` erweitern (siehe 3.3) |
 | Neue Domäne | Fixtures + Handler in `mock_tools.HANDLERS` + `mcp/*.yaml` + Cards + Prompts + Config; Szenarien von Hand oder eigener Generator |
 | Neue Check-Art | Funktion in `evaluators.deterministic_checks()`; Schema-Feld in `SuccessCriteria` ergänzen |
 | Neues Judge-Kriterium | Feld in `JudgeScores` + Score-Übertragung in `runner.run_conversation()` + Spalte in `report` |

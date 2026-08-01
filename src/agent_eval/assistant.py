@@ -73,7 +73,8 @@ class MultiAgentAssistant:
         }
 
     def _customer_context_block(self) -> str:
-        mode = self.exp.config.context.customer_context
+        mode = (self.exp.config.context.customer_context
+                if self.exp.config.context else "none")
         if mode == "none":
             return ""
         customers = self.exp.fixtures.get("customers", {})

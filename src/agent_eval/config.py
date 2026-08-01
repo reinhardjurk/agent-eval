@@ -35,12 +35,20 @@ class ModelRef(BaseModel):
     model: str = "claude-opus-5"
 
 
+class AssistantConfig(BaseModel):
+    type: Literal["builtin", "http"] = "builtin"
+    url: str | None = None        # Pflicht bei type: http
+    timeout_s: float = 120.0
+    auth_env: str | None = None   # Name einer Env-Var mit Bearer-Token (optional)
+
+
 class ExperimentConfig(BaseModel):
     id: str
-    model: str
-    agents: list[str]
-    mcp: list[MCPSelection]
-    context: ContextConfig
+    model: str                    # bei assistant.type http nur Label fuer Report/Tracing
+    assistant: AssistantConfig = Field(default_factory=AssistantConfig)
+    agents: list[str] = Field(default_factory=list)
+    mcp: list[MCPSelection] = Field(default_factory=list)
+    context: ContextConfig | None = None
     sampling: SamplingConfig = Field(default_factory=SamplingConfig)
     simulator: ModelRef = Field(default_factory=ModelRef)
     judge: ModelRef = Field(default_factory=ModelRef)
@@ -121,6 +129,13 @@ def load_experiment(config_path: Path) -> ResolvedExperiment:
     root = config_path.parent.parent
     cfg = ExperimentConfig(**_load_yaml(config_path))
 
+    if cfg.assistant.type == "http":
+        if not cfg.assistant.url:
+            raise ValueError(f"{config_path.name}: assistant.type 'http' erfordert assistant.url")
+    elif cfg.context is None or not cfg.agents:
+        raise ValueError(f"{config_path.name}: eingebauter Assistent erfordert "
+                         f"'context' und mindestens einen Eintrag in 'agents'")
+
     selected: dict[str, ToolDef] = {}
     fixtures: dict = {}
     for sel in cfg.mcp:
@@ -139,7 +154,8 @@ def load_experiment(config_path: Path) -> ResolvedExperiment:
         card_prompts[card.name] = (root / card.system_prompt).read_text(encoding="utf-8")
         tools_by_agent[card.name] = [selected[n] for n in card.tools if n in selected]
 
-    concierge = (root / cfg.context.system_prompt).read_text(encoding="utf-8")
+    concierge = ((root / cfg.context.system_prompt).read_text(encoding="utf-8")
+                 if cfg.context else "")
     return ResolvedExperiment(
         root=root,
         config=cfg,
