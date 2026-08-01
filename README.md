@@ -61,6 +61,12 @@ python -m agent_eval run --config configs/haiku-full-context.yaml
 python -m agent_eval report results/baseline-opus5/results.json results/haiku-full-context/results.json
 ```
 
+**Alle Befehle:** `run` (Experiment ausführen), `report [--by-scenario]`
+(Konfigurationen/Szenarien vergleichen), `judge` (LLM-Judge nachträglich auf
+gespeicherte Läufe), `label`/`calibrate` (Judge gegen manuelle Annotationen
+kalibrieren) sowie `python -m agent_eval.scenario_gen` (Automotive-Szenarien
+generieren) — Details in der [Anleitung](docs/ANLEITUNG.md).
+
 ## Konfigurationsraum
 
 Jede Dimension ist ein versioniertes Artefakt — Änderungen daran sind per Git-Diff
@@ -73,6 +79,7 @@ nachvollziehbar und per CI regressionsgetestet:
 | MCP-Tools | `mcp/*.yaml` + `configs` → `mcp.tools` | Tool-Beschreibungen, Untermengen von Tools |
 | Initialkontext | `configs` → `context` | System-Prompt-Varianten, `customer_context: none/minimal/full` |
 | Sampling | `configs` → `sampling` | `max_tokens`, `effort` (Latenz-Hebel; von Haiku 4.5 nicht unterstützt) |
+| Testkandidat | `configs` → `assistant` | eingebauter Referenz-Assistent (`builtin`) vs. externes System über HTTP (`http`, siehe [Anleitung 6b](docs/ANLEITUNG.md)) |
 
 ### Andere Modelle einstellen
 
@@ -110,7 +117,7 @@ zwischen Anthropic- und Ollama-Format; Server-Adresse via `OLLAMA_HOST`
 
 | Achse | Was gemessen wird |
 |---|---|
-| Qualität | Erfolgsquote der deterministischen Checks (richtiges Tool, richtige Argumente, verbotene Tools, Erwähnungen), Judge-Scores: Zielerreichung, Faithfulness (Halluzinationen ggü. Tool-Log), Gesprächsführung, Voice-Eignung |
+| Qualität | Erfolgsquote der deterministischen Checks (richtiges Tool, richtige Argumente inkl. ODER-Mustern, erfolgreiches Tool-Ergebnis, verbotene Tools, Erwähnungen) als k/n mit Wilson-95%-Konfidenzintervall; Judge-Scores (kalibrierbar über `label`/`calibrate`): Zielerreichung, Faithfulness (Halluzinationen ggü. Tool-Log), Gesprächsführung, Voice-Eignung |
 | Latenz | Turn-Latenz p50/p95 und **Time-to-First-Token** p50/p95 (gefühlte Latenz am Telefon) |
 | Verbrauch | Input-/Output-Tokens pro Konversation, geschätzte Kosten in USD |
 

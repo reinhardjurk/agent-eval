@@ -35,6 +35,11 @@ aus Streaming-Instrumentierung, einem Tool-Call-Log und automatisierter Bewertun
                                                                     GITHUB_STEP_SUMMARY
 ```
 
+Das Diagramm zeigt den eingebauten Referenz-Assistenten; bei
+`assistant: {type: http}` tritt an dessen Stelle der HTTP-Adapter
+(Abschnitt 3.3b), der ein extern laufendes System anspricht — Simulator,
+Bewertung, Tracing und Report bleiben identisch.
+
 Zentrale Design-Entscheidungen:
 
 - **Determinismus, wo möglich:** Tool-Backend als In-Process-Mock mit fixen
@@ -194,8 +199,8 @@ Dünner Wrapper um das Langfuse-v3-SDK (OTel-basiert), No-Op ohne
 `LANGFUSE_PUBLIC_KEY`/`SECRET_KEY` oder bei Fehlern. Trace-Struktur pro Konversation:
 
 ```
-Trace  <config-id>/<scenario-id>#<rep>     (metadata: config_id, model, scenario, rep,
-│                                           customer_context; tags: [config-id, scenario-id])
+Trace  <config-id>/<scenario-id>#<rep>     (metadata: config_id, model, assistant, scenario,
+│                                           rep, customer_context; tags: [config-id, scenario-id])
 ├─ generation orchestrator                 (model, usage, in/out)
 ├─ span agent:<name>                       (input: task)
 │   ├─ generation <agent-name>
@@ -208,11 +213,13 @@ Trace  <config-id>/<scenario-id>#<rep>     (metadata: config_id, model, scenario
 ### 3.8 `runner.py` — Orchestrierung
 
 `run_experiment()`: Config + Szenarien laden → Anthropic-Client nur erzeugen,
-wenn irgendeine Rolle ihn braucht → Schleife über Szenario × Wiederholung →
+wenn irgendeine Rolle ihn braucht (bei `assistant.type: http` zählen nur
+Simulator und Judge) → Schleife über Szenario × Wiederholung →
 `run_conversation()` → `results.json` + `summary.md` schreiben, Tabelle auf
 stdout und nach `GITHUB_STEP_SUMMARY`. `run_conversation()` verdrahtet pro Lauf
-frische Instanzen (Runtime mit Fixture-Kopie, Assistent, Simulator) und beendet
-die Schleife bei `[DONE]`, leerer Simulatorantwort oder `max_turns`.
+frische Instanzen (Runtime mit Fixture-Kopie, Assistent gemäß `assistant.type` —
+im Fake-Modus immer der eingebaute —, Simulator) und beendet die Schleife bei
+`[DONE]`, leerer Simulatorantwort oder `max_turns`.
 
 ### 3.9 `report.py` — Aggregation
 
@@ -248,12 +255,18 @@ Szenario vor dem Schreiben gegen das Pydantic-Schema.
 
 ```yaml
 id: string                      # = Ausgabeverzeichnis + Langfuse-Tag
-model: string                   # "claude-*" oder "ollama/<name>"
-agents: [pfad/zu/card.json]     # Reihenfolge egal; Card-Beschreibung steuert Routing
-mcp:
+model: string                   # "claude-*", "ollama/<name>"; bei assistant.type http
+                                #   nur Label (Konvention "extern/<name>" -> Kosten 0)
+assistant:                      # optional; Default: eingebauter Referenz-Assistent
+  type: builtin|http
+  url: string                   # Pflicht bei http
+  timeout_s: float              # Default 120
+  auth_env: string              # optional: Env-Var mit Bearer-Token
+agents: [pfad/zu/card.json]     # Pflicht bei builtin; Card-Beschreibung steuert Routing
+mcp:                            # Pflicht bei builtin
   - server: mcp/x.yaml
     tools: [name, ...]          # optional: Untermenge; fehlt = alle
-context:
+context:                        # Pflicht bei builtin; entfaellt bei http
   system_prompt: prompts/x.md
   customer_context: none|minimal|full
 sampling:
@@ -263,6 +276,9 @@ simulator: {model: string}      # konstant halten bei Vergleichen!
 judge:     {model: string}      # Claude-only
 repetitions: int
 ```
+
+Die Validierung erzwingt die Kombinationen: `type: http` erfordert `url`;
+`type: builtin` erfordert `context` und mindestens einen `agents`-Eintrag.
 
 ### 4.2 Ergebnisdatei (`results/<id>/results.json`)
 

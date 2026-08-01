@@ -14,8 +14,9 @@ pip install -e ".[dev]"
 cp .env.example .env
 ```
 
-In `.env` mindestens `ANTHROPIC_API_KEY` eintragen (Langfuse-Keys sind optional),
-dann in die Shell laden:
+In `.env` mindestens `ANTHROPIC_API_KEY` eintragen (Langfuse-Keys sind optional;
+rein lokale Ollama-Läufe mit Ollama-Simulator und `--no-judge` kommen ganz ohne
+Key aus), dann in die Shell laden:
 
 ```bash
 export $(grep -v '^#' .env | xargs)
@@ -62,6 +63,17 @@ python -m agent_eval run --config configs/baseline.yaml --scenarios scenarios
 python -m agent_eval run --config configs/auto-baseline.yaml --scenarios scenarios/auto
 ```
 
+### Alle Befehle im Überblick
+
+| Befehl | Zweck | Details |
+|---|---|---|
+| `python -m agent_eval run` | Experiment ausführen | Abschnitt 2 |
+| `python -m agent_eval report [--by-scenario]` | Ergebnisse mergen und vergleichen | Abschnitte 4–5 |
+| `python -m agent_eval judge` | LLM-Judge nachträglich auf gespeicherte Läufe anwenden | Abschnitt 5b |
+| `python -m agent_eval label` | YAML-Vorlage für manuelle Annotation erzeugen | Abschnitt 5b |
+| `python -m agent_eval calibrate` | Judge-Scores gegen manuelle Labels stellen | Abschnitt 5b |
+| `python -m agent_eval.scenario_gen` | Automotive-Szenarien generieren (Menge/Seed/Domänen) | Abschnitt 7 |
+
 ---
 
 ## 3. Ergebnisse lesen
@@ -78,10 +90,11 @@ Die Spalten der Tabelle:
 
 | Spalte | Bedeutung |
 |---|---|
-| Erfolg (Checks) | Anteil der Läufe, in denen **alle** deterministischen Checks bestanden (richtiges Tool, richtige Argumente, keine verbotenen Tools) — die harte Metrik |
+| Erfolg (Checks) | `k/n (%)`: Läufe, in denen **alle** deterministischen Checks bestanden — richtiges Tool, richtige Argumente (Muster-Listen = ODER) und ein erfolgreiches Tool-Ergebnis (`result_ok`), keine verbotenen Tools. Die harte Metrik |
+| 95%-CI | Wilson-Konfidenzintervall der Erfolgsquote — bei kleinem n breit; Unterschiede zwischen Konfigurationen erst ernst nehmen, wenn sich die Intervalle klar trennen |
 | Ziel erreicht (Judge) | LLM-Judge: wurde das Kundenanliegen erledigt? (in % der Läufe) |
-| Faithfulness | 1–5: sind Faktenaussagen durch Tool-Ergebnisse gedeckt? Niedrig = Halluzination |
-| Dialog / Voice | 1–5: Gesprächsführung / Eignung für Sprachausgabe |
+| Faithfulness | 1–5 als Mittel±SD: sind Faktenaussagen durch Tool-Ergebnisse gedeckt? Niedrig = Halluzination |
+| Dialog / Voice | 1–5 als Mittel±SD: Gesprächsführung / Eignung für Sprachausgabe |
 | Turn-Latenz p50/p95 | Dauer eines kompletten Assistenten-Turns (inkl. aller Agenten- und Tool-Schritte) |
 | TTFT p50/p95 | Time-to-First-Token — der Proxy für die **gefühlte** Latenz am Telefon/im Auto |
 | Ø Tokens, Kosten | Verbrauch pro Konversation, Kosten geschätzt nach Listenpreisen |
@@ -146,11 +159,13 @@ Dasselbe Muster für die anderen Dimensionen:
 | Latenz-Hebel | `sampling.effort: low` vs. `medium` |
 | Lokal vs. API | `model: ollama/qwen3:14b` (siehe README, Abschnitt Ollama) |
 
-**Interpretationsregeln:** Bei kleinen Stichproben (3–5 Wiederholungen × wenige
-Szenarien) sind Unterschiede von 10–20 Prozentpunkten Erfolgsquote noch Rauschen.
-Erst Differenzen deutlich außerhalb der Streuung ernst nehmen — im Zweifel
-Wiederholungen erhöhen. Latenz-Perzentile zwischen lokalen Modellen und API nicht
-direkt vergleichen (Hardware!), und Kosten von `ollama/`-Modellen sind immer 0.
+**Interpretationsregeln:** Der Report nimmt dir die Rauschabschätzung ab: Die
+Spalte **95%-CI** zeigt das Wilson-Konfidenzintervall der Erfolgsquote — solange
+sich die Intervalle zweier Konfigurationen überlappen, ist der Unterschied nicht
+belastbar (bei n=6 überlappt fast alles; im Zweifel Wiederholungen erhöhen).
+Judge-Skalen tragen ±SD als Streumaß. Latenz-Perzentile zwischen lokalen
+Modellen und API nicht direkt vergleichen (Hardware!), und Kosten von
+`ollama/`- und `extern/`-Modellen sind immer 0.
 
 ---
 
@@ -328,6 +343,8 @@ PR ansehen, mit dem letzten Baseline-Lauf vergleichen, erst dann mergen.
 | `400` mit Hinweis auf `effort`/`output_config` | Modell unterstützt kein `effort` (z. B. Haiku) → Zeile aus `sampling` entfernen |
 | Abbruch beim Start: API-Key | `ANTHROPIC_API_KEY` nicht exportiert (`.env` wird nicht automatisch geladen) |
 | `Connection refused` bei `ollama/`-Modell | `ollama serve` läuft nicht bzw. `OLLAMA_HOST` falsch; Modell mit `ollama pull` holen |
-| Judge-Spalten zeigen `–` | Lauf mit `--no-judge` oder `--fake`, oder Judge-Aufruf fehlgeschlagen (stdout prüfen) |
+| Judge-Spalten zeigen `–` | Lauf mit `--no-judge` oder `--fake`, oder Judge-Aufruf fehlgeschlagen (stdout prüfen); nachträglich bewerten: `python -m agent_eval judge` |
+| Check-Detail „Tool lieferte einen Fehler" | Der Aufruf passte, aber das Tool gab `{"error": ...}` zurück — Standardverhalten (`result_ok: true`). Soll nur der Versuch zählen, im Szenario `result_ok: false` setzen |
+| HTTP-Assistent: Checks scheitern trotz korrekter Antworten | Externes System liefert kein `tool_calls`-Feld — ohne Tool-Log keine tool-basierten Checks (Abschnitt 6b) |
 | Keine Traces in Langfuse | `LANGFUSE_*`-Keys fehlen/falsch — der Runner läuft dann bewusst ohne Tracing weiter |
 | Ergebnisse schwanken stark | Normal bei kleinen N — Wiederholungen erhöhen, Streuung mitbetrachten |
