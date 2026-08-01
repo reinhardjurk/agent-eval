@@ -1,0 +1,78 @@
+name: Eval
+
+on:
+  workflow_dispatch:
+    inputs:
+      config:
+        description: "Experiment-Konfiguration"
+        required: false
+        default: "configs/baseline.yaml"
+      reps:
+        description: "Wiederholungen pro Szenario"
+        required: false
+        default: "1"
+  pull_request:
+    paths:
+      - "configs/**"
+      - "cards/**"
+      - "prompts/**"
+      - "mcp/**"
+      - "fixtures/**"
+      - "scenarios/**"
+      - "src/**"
+      - ".github/workflows/eval.yml"
+
+jobs:
+  # Laeuft immer, braucht keine Secrets: validiert Configs/Szenarien und den
+  # kompletten Pipeline-Durchstich im Fake-Modus.
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+      - name: Pipeline-Durchstich ohne API (Fake-Modus)
+        run: python -m agent_eval run --config configs/baseline.yaml --scenarios scenarios --reps 1 --out results/smoke --fake
+
+  # Echter Eval-Lauf gegen die Claude API + Langfuse. Wird uebersprungen, wenn
+  # das Secret ANTHROPIC_API_KEY nicht gesetzt ist (z.B. bei Forks).
+  eval:
+    needs: smoke
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Secrets pruefen
+        id: secrets
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Secret ANTHROPIC_API_KEY fehlt – echter Eval-Lauf uebersprungen."
+          fi
+      - name: Eval ausfuehren
+        if: steps.secrets.outputs.run == 'true'
+        run: >
+          python -m agent_eval run
+          --config "${{ github.event.inputs.config || 'configs/baseline.yaml' }}"
+          --scenarios scenarios
+          --reps "${{ github.event.inputs.reps || '1' }}"
+          --out results/ci
+      - name: Ergebnisse als Artefakt sichern
+        if: steps.secrets.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: results/ci

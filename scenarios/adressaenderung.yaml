@@ -1,0 +1,18 @@
+id: adressaenderung
+persona: "Freundliche Kundin, 34, gut organisiert. Kundennummer KD-1001, Name Erika Mustermann."
+goal: >
+  Du bist umgezogen. Deine neue Adresse ist Gartenweg 5, 80331 Muenchen.
+  Du willst, dass die Adresse im Kundenkonto geaendert wird, und eine Bestaetigung.
+constraints: >
+  Du hast die Kundennummer parat und nennst sie sofort, wenn danach gefragt wird.
+  Du diktierst die Adresse in einem Stueck.
+opening_message: "Guten Tag, ich bin vor kurzem umgezogen und moechte meine Adresse bei Ihnen aendern lassen."
+max_turns: 8
+success_criteria:
+  tool_calls:
+    - tool: update_address
+      with_args:
+        customer_id: "KD-1001"
+        postal_code: "80331"
+        city: "M*nchen"
+  forbidden_tools: [create_complaint]

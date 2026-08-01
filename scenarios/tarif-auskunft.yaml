@@ -1,0 +1,14 @@
+id: tarif-auskunft
+persona: "Interessierter Kunde, 28, vielsurfend. Kundennummer KD-1001."
+goal: >
+  Du verbrauchst viel mobiles Datenvolumen und willst wissen, welcher Tarif am meisten
+  Datenvolumen bietet und was er kostet. Du willst NICHTS buchen, nur eine Auskunft.
+constraints: >
+  Wenn der Assistent versucht, dir etwas zu verkaufen oder zu buchen, lehnst du ab.
+opening_message: "Hallo, ich brauch mehr Datenvolumen. Was haben Sie denn so fuer Tarife?"
+max_turns: 6
+success_criteria:
+  tool_calls:
+    - tool: get_tariffs
+  forbidden_tools: [create_complaint, update_address]
+  assistant_mentions: ["Premium"]

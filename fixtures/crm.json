@@ -1,0 +1,58 @@
+{
+  "customers": {
+    "KD-1001": {
+      "customer_id": "KD-1001",
+      "name": "Erika Mustermann",
+      "address": {
+        "street": "Lindenstrasse 12",
+        "postal_code": "50667",
+        "city": "Koeln"
+      },
+      "tariff": "Komfort M",
+      "invoices": [
+        {
+          "id": "R-2024-001",
+          "date": "2024-05-01",
+          "total_eur": 39.99,
+          "items": [
+            {"label": "Grundgebuehr Komfort M", "amount_eur": 39.99}
+          ]
+        },
+        {
+          "id": "R-2024-002",
+          "date": "2024-06-01",
+          "total_eur": 49.98,
+          "items": [
+            {"label": "Grundgebuehr Komfort M", "amount_eur": 39.99},
+            {"label": "Servicepauschale", "amount_eur": 9.99}
+          ]
+        }
+      ]
+    },
+    "KD-2002": {
+      "customer_id": "KD-2002",
+      "name": "Max Beispiel",
+      "address": {
+        "street": "Hauptstrasse 1",
+        "postal_code": "10115",
+        "city": "Berlin"
+      },
+      "tariff": "Basis S",
+      "invoices": [
+        {
+          "id": "R-2024-101",
+          "date": "2024-06-01",
+          "total_eur": 19.99,
+          "items": [
+            {"label": "Grundgebuehr Basis S", "amount_eur": 19.99}
+          ]
+        }
+      ]
+    }
+  },
+  "tariffs": [
+    {"name": "Basis S", "price_eur": 19.99, "data_gb": 5},
+    {"name": "Komfort M", "price_eur": 39.99, "data_gb": 25},
+    {"name": "Premium L", "price_eur": 59.99, "data_gb": 100}
+  ]
+}

@@ -1,0 +1,73 @@
+# Mock-MCP-Server "crm": Tool-Definitionen wie sie ein echter MCP-Server exportieren wuerde.
+# Die Beschreibungen sind Prompt-Text und damit selbst Gegenstand der Evaluation!
+name: crm
+fixtures: fixtures/crm.json
+tools:
+  - name: get_customer
+    description: "Liefert die Stammdaten eines Kunden (Name, Adresse, aktueller Tarif) anhand der Kundennummer."
+    handler: get_customer
+    input_schema:
+      type: object
+      properties:
+        customer_id:
+          type: string
+          description: "Kundennummer, z.B. KD-1001"
+      required: [customer_id]
+
+  - name: get_invoices
+    description: "Liefert alle Rechnungen eines Kunden inklusive Einzelpositionen und Betraegen."
+    handler: get_invoices
+    input_schema:
+      type: object
+      properties:
+        customer_id:
+          type: string
+          description: "Kundennummer, z.B. KD-1001"
+      required: [customer_id]
+
+  - name: create_complaint
+    description: "Legt eine Reklamation zu einer konkreten Rechnung an und liefert die Ticketnummer zurueck. Vorher pruefen, dass die Rechnung existiert."
+    handler: create_complaint
+    input_schema:
+      type: object
+      properties:
+        customer_id:
+          type: string
+          description: "Kundennummer"
+        invoice_id:
+          type: string
+          description: "Rechnungsnummer, z.B. R-2024-002"
+        reason:
+          type: string
+          description: "Beanstandung in einem Satz, inkl. betroffener Position"
+      required: [customer_id, invoice_id, reason]
+
+  - name: update_address
+    description: "Aendert die Rechnungs- und Lieferadresse eines Kunden. Alle Felder sind Pflicht."
+    handler: update_address
+    input_schema:
+      type: object
+      properties:
+        customer_id: {type: string, description: "Kundennummer"}
+        street: {type: string, description: "Strasse und Hausnummer"}
+        postal_code: {type: string, description: "Postleitzahl"}
+        city: {type: string, description: "Ort"}
+      required: [customer_id, street, postal_code, city]
+
+  - name: get_tariffs
+    description: "Liefert die aktuell buchbaren Tarife mit Preisen und Datenvolumen."
+    handler: get_tariffs
+    input_schema:
+      type: object
+      properties: {}
+
+  - name: escalate_to_human
+    description: "Uebergibt das Anliegen an einen menschlichen Mitarbeiter und liefert eine Vorgangsnummer. Nutzen, wenn das Anliegen mit den vorhandenen Tools nicht loesbar ist oder der Kunde einen Menschen verlangt."
+    handler: escalate_to_human
+    input_schema:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: "Kurze Zusammenfassung des Anliegens fuer den Mitarbeiter"
+      required: [reason]

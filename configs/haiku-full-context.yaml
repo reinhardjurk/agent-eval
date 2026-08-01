@@ -1,0 +1,26 @@
+# Vergleichskonfiguration: kleineres/schnelleres Modell, dafuer voller Kundenkontext im Prompt.
+id: haiku-full-context
+model: claude-haiku-4-5
+
+agents:
+  - cards/billing-agent.json
+  - cards/account-agent.json
+
+mcp:
+  - server: mcp/crm-server.yaml
+
+context:
+  system_prompt: prompts/concierge.md
+  customer_context: full
+
+sampling:
+  max_tokens: 1024
+  # kein effort: der Parameter wird von claude-haiku-4-5 nicht unterstuetzt
+
+simulator:
+  model: claude-opus-5
+
+judge:
+  model: claude-opus-5
+
+repetitions: 3

@@ -1,0 +1,7 @@
+{
+  "name": "billing-agent",
+  "description": "Zustaendig fuer alles rund um Rechnungen: Rechnungsauskuenfte geben, einzelne Rechnungspositionen erklaeren und Reklamationen zu Rechnungen aufnehmen. Delegiere an diesen Agenten, sobald es um Rechnungen, Betraege oder Beschwerden zu Abrechnungen geht.",
+  "system_prompt": "prompts/billing-agent.md",
+  "tools": ["get_customer", "get_invoices", "create_complaint"],
+  "model": null
+}

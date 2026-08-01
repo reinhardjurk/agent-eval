@@ -1,0 +1,19 @@
+id: rechnungs-reklamation
+persona: "Ungeduldiger Bestandskunde, 55, wenig technikaffin. Kundennummer KD-1001, Name Erika Mustermann."
+goal: >
+  Auf der Rechnung R-2024-002 steht eine Position "Servicepauschale" ueber 9,99 Euro,
+  die du nie beauftragt hast. Du willst, dass dazu eine Reklamation aufgenommen wird
+  und du eine Bestaetigung mit Vorgangsnummer bekommst.
+constraints: >
+  Du nennst die Kundennummer erst auf Nachfrage. Die Rechnungsnummer kennst du nicht
+  auswendig, nur den Monat (Juni) und den Betrag. Bei langen Monologen des Assistenten
+  wirst du ungeduldig.
+opening_message: "Ja hallo, auf meiner letzten Rechnung ist irgendwas drauf, was ich nie bestellt habe. Das sehe ich gar nicht ein."
+max_turns: 8
+success_criteria:
+  tool_calls:
+    - tool: create_complaint
+      with_args:
+        customer_id: "KD-1001"
+        invoice_id: "R-2024-*"
+  forbidden_tools: [update_address]

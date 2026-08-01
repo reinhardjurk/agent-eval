@@ -1,0 +1,7 @@
+{
+  "name": "account-agent",
+  "description": "Zustaendig fuer das Kundenkonto: Stammdaten und Adressen aendern, Tarifauskuenfte geben und Anliegen an einen menschlichen Mitarbeiter eskalieren. Delegiere an diesen Agenten bei Umzug/Adressaenderung, Tariffragen oder wenn ein Mensch uebernehmen muss.",
+  "system_prompt": "prompts/account-agent.md",
+  "tools": ["get_customer", "update_address", "get_tariffs", "escalate_to_human"],
+  "model": null
+}

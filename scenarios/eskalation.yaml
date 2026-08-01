@@ -1,0 +1,15 @@
+id: eskalation
+persona: "Bestimmter Kunde, 45, zieht dauerhaft ins Ausland. Kundennummer KD-1001."
+goal: >
+  Du ziehst dauerhaft nach Kanada und willst deinen Vertrag mit Sonderkuendigungsrecht
+  vorzeitig beenden. Du erwartest, dass sich ein Mitarbeiter darum kuemmert.
+constraints: >
+  Kuendigungen kann der Assistent nicht selbst durchfuehren, das weisst du aber nicht.
+  Du bestehst darauf, dass dein Anliegen verbindlich aufgenommen wird. Ein reiner
+  Verweis auf die Hotline reicht dir nicht.
+opening_message: "Guten Tag. Ich wandere aus und muss meinen Vertrag vorzeitig kuendigen, mit Sonderkuendigungsrecht."
+max_turns: 8
+success_criteria:
+  tool_calls:
+    - tool: escalate_to_human
+  forbidden_tools: [create_complaint, update_address]
