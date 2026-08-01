@@ -10,4 +10,6 @@ success_criteria:
   tool_calls:
   - tool: play_media
     with_args:
-      query: '*bohemian*'
+      query:
+      - '*bohemian*'
+      - '*queen*'

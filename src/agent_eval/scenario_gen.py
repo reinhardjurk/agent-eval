@@ -51,11 +51,14 @@ NAV_DESTINATIONS = [
     ("Bremerhaven", "mit den Kindern ins Klimahaus"),
 ]
 
+# Muster-Listen sind ODER-verknuepft: Suche nach Titel ODER Interpret zaehlt —
+# beides findet den Eintrag in der Mock-Mediathek (Lernpunkt aus dem Experiment
+# vom 2026-08-01: reine Titel-Muster werteten Interpret-Suchen als Fehler).
 MEDIA_WISHES = [
-    ("den Song 'Bohemian Rhapsody' von Queen", "*bohemian*"),
-    ("'Atemlos durch die Nacht' von Helene Fischer", "*atemlos*"),
-    ("die Playlist 'Late Night Jazz'", "*jazz*"),
-    ("die neueste Folge des True-Crime-Podcasts 'Kaltblut'", "*kaltblut*"),
+    ("den Song 'Bohemian Rhapsody' von Queen", ["*bohemian*", "*queen*"]),
+    ("'Atemlos durch die Nacht' von Helene Fischer", ["*atemlos*", "*helene*", "*fischer*"]),
+    ("die Playlist 'Late Night Jazz'", ["*jazz*"]),
+    ("die neueste Folge des True-Crime-Podcasts 'Kaltblut'", ["*kaltblut*", "*crime*"]),
 ]
 
 RADIO_WISHES = [
@@ -189,7 +192,8 @@ def bp_ent_kinder(rng: random.Random) -> dict:
         "opening": "Okay okay! Nova, mach den Kindern ihre Lieder an, sonst dreh ich durch.",
         "max_turns": 6,
         "criteria": {
-            "tool_calls": [{"tool": "play_media", "with_args": {"query": "*kinderlieder*"}}],
+            "tool_calls": [{"tool": "play_media",
+                            "with_args": {"query": ["*kinderlieder*", "*kinder*"]}}],
         },
     }
 
@@ -308,7 +312,8 @@ def bp_kombi_date(rng: random.Random) -> dict:
         "criteria": {
             "tool_calls": [
                 {"tool": "start_navigation", "with_args": {"destination": "*bella*"}},
-                {"tool": "play_media", "with_args": {"query": "*entspann*"}},
+                {"tool": "play_media",
+                 "with_args": {"query": ["*entspann*", "*jazz*", "*chill*", "*ruhig*"]}},
                 {"tool": "set_temperature", "with_args": {"celsius": "22*"}},
             ],
         },
@@ -348,7 +353,8 @@ def bp_kombi_urlaub(rng: random.Random) -> dict:
         "criteria": {
             "tool_calls": [
                 {"tool": "start_navigation", "with_args": {"destination": "*timmendorf*"}},
-                {"tool": "play_media", "with_args": {"query": "*kinderlieder*"}},
+                {"tool": "play_media",
+                 "with_args": {"query": ["*kinderlieder*", "*kinder*"]}},
             ],
         },
     }

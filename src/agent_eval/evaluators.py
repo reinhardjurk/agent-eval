@@ -4,6 +4,7 @@ und LLM-as-a-Judge mit fester Rubrik und strukturiertem Output."""
 from __future__ import annotations
 
 import fnmatch
+import json
 import re
 
 from pydantic import BaseModel, Field
@@ -12,6 +13,22 @@ from .config import Scenario
 from .mock_tools import ToolCall
 
 # ------------------------------------------------------------ deterministisch
+
+
+def _arg_matches(value, patterns) -> bool:
+    """fnmatchcase auf lowercase: case-insensitiv und plattformunabhaengig.
+    Eine Muster-Liste ist ODER-verknuepft (ein Treffer genuegt)."""
+    candidates = patterns if isinstance(patterns, list) else [patterns]
+    haystack = str(value).lower()
+    return any(fnmatch.fnmatchcase(haystack, p.lower()) for p in candidates)
+
+
+def _result_is_error(result: str) -> bool:
+    try:
+        parsed = json.loads(result)
+    except (ValueError, TypeError):
+        return False
+    return isinstance(parsed, dict) and "error" in parsed
 
 
 def deterministic_checks(scenario: Scenario, transcript: list[dict],
@@ -26,16 +43,20 @@ def deterministic_checks(scenario: Scenario, transcript: list[dict],
             if call.tool != expected.tool:
                 continue
             mismatches = [
-                f"{key}={call.args.get(key)!r} != Muster {pattern!r}"
-                for key, pattern in expected.with_args.items()
-                # fnmatchcase auf lowercase: case-insensitiv und plattformunabhaengig
-                if not fnmatch.fnmatchcase(str(call.args.get(key, "")).lower(), pattern.lower())
+                f"{key}={call.args.get(key)!r} != Muster {patterns!r}"
+                for key, patterns in expected.with_args.items()
+                if not _arg_matches(call.args.get(key, ""), patterns)
             ]
-            if not mismatches:
-                matched = True
-                detail = f"{expected.tool} korrekt aufgerufen"
-                break
-            detail = f"{expected.tool} aufgerufen, aber: {'; '.join(mismatches)}"
+            if mismatches:
+                detail = f"{expected.tool} aufgerufen, aber: {'; '.join(mismatches)}"
+                continue
+            if expected.result_ok and _result_is_error(call.result):
+                detail = (f"{expected.tool} passend aufgerufen, aber das Tool lieferte "
+                          f"einen Fehler: {call.result[:120]}")
+                continue  # ein spaeterer Aufruf kann noch erfolgreich sein
+            matched = True
+            detail = f"{expected.tool} korrekt aufgerufen"
+            break
         checks.append({"name": f"tool_called:{expected.tool}", "passed": matched,
                        "detail": detail})
 

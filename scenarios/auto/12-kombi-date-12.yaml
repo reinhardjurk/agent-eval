@@ -15,7 +15,11 @@ success_criteria:
       destination: '*bella*'
   - tool: play_media
     with_args:
-      query: '*entspann*'
+      query:
+      - '*entspann*'
+      - '*jazz*'
+      - '*chill*'
+      - '*ruhig*'
   - tool: set_temperature
     with_args:
       celsius: 22*

@@ -193,6 +193,39 @@ fehlgeschlagene Stelle im Gesprächsverlauf ansehen.
 
 ---
 
+## 5b. Judge nachträglich anwenden und kalibrieren
+
+Der Judge lässt sich **nachträglich** auf gespeicherte Läufe anwenden — z. B. auf
+lokale Ollama-Läufe, die ohne API-Key entstanden sind (Konversationen werden
+nicht neu gefahren, nur bewertet):
+
+```bash
+python -m agent_eval judge --results results/auto-lokal-qwen/results.json \
+    --scenarios scenarios/auto-lokal
+```
+
+Das schreibt die Judge-Scores in die `results.json` zurück und aktualisiert die
+`summary.md`.
+
+**Kalibrierung** — bevor du Judge-Zahlen für Entscheidungen nutzt, prüfe einmal,
+wie gut der Judge mit deinem Urteil übereinstimmt:
+
+```bash
+# 1. Annotations-Vorlage erzeugen (Transkript + leere Bewertungsfelder pro Lauf)
+python -m agent_eval label --results results/baseline-opus5/results.json
+
+# 2. labels.yaml von Hand ausfuellen (goal_achieved: true/false, Skalen 1-5)
+
+# 3. Uebereinstimmung messen
+python -m agent_eval calibrate --results results/baseline-opus5/results.json \
+    --labels results/baseline-opus5/labels.yaml
+```
+
+Ausgegeben werden Übereinstimmung bei `goal_achieved` (%), mittlerer absoluter
+Fehler (MAE) und Bias pro 1–5-Skala (Bias > 0 = Judge milder als du). Richtwert:
+ab ~85–90 % Zielerreichungs-Übereinstimmung und MAE ≲ 0,7 sind die Judge-Zahlen
+für Vergleiche brauchbar; darunter Rubrik im Judge-Prompt schärfen und erneut messen.
+
 ## 6. Eigene Konfiguration anlegen — Checkliste
 
 1. `cp configs/baseline.yaml configs/<name>.yaml`
@@ -220,6 +253,20 @@ Erfolgskriterien **gegen das Tool-Log** formulieren (nicht gegen Formulierungen)
 `with_args`-Muster tolerant halten (`"R-2024-*"`, `"*bella*"` — Matching ist
 case-insensitiv), und auch Negativ-Szenarien einplanen (`forbidden_tools`:
 was der Assistent gerade *nicht* tun soll).
+
+Zwei Check-Feinheiten:
+
+- **ODER-Muster:** Ein `with_args`-Wert darf eine Liste sein — ein Treffer genügt.
+  Beispiel Mediensuche, bei der Titel *oder* Interpret zählt:
+  ```yaml
+  - tool: play_media
+    with_args:
+      query: ["*atemlos*", "*helene*", "*fischer*"]
+  ```
+- **`result_ok`** (Default `true`): Der passende Aufruf muss auch *erfolgreich*
+  sein — liefert das Tool `{"error": ...}`, zählt der Check als nicht bestanden.
+  `result_ok: false` prüft nur den Versuch (z. B. wenn das Szenario gerade das
+  Fehlerhandling testen soll).
 
 Gleicher `--seed` ⇒ identisches Set. Für Vergleiche gilt: **Szenarien-Set
 einfrieren** (committen) und alle Konfigurationen gegen dasselbe Set messen —

@@ -157,7 +157,7 @@ endet das Gespräch. Der Simulator läuft mit kleinem Token-Budget (600) und
 
 | Check | Quelle | Semantik |
 |---|---|---|
-| `tool_called:<name>` | Tool-Log | mind. ein Aufruf, dessen Argumente alle `with_args`-Muster erfüllen (fnmatch, case-insensitiv via `fnmatchcase(lower, lower)`) |
+| `tool_called:<name>` | Tool-Log | mind. ein Aufruf, dessen Argumente alle `with_args`-Muster erfüllen (fnmatch, case-insensitiv; Listen sind ODER-verknüpft) und der bei `result_ok: true` (Default) kein `{"error": ...}` zurückgab |
 | `tool_not_called:<name>` | Tool-Log | Tool wurde nie aufgerufen |
 | `assistant_mentions:<regex>` | Transkript | Regex (IGNORECASE) über alle Assistententexte |
 | `within_max_turns` | Transkript | Assistenten-Turns ≤ `max_turns` |
@@ -199,7 +199,20 @@ die Schleife bei `[DONE]`, leerer Simulatorantwort oder `max_turns`.
 Preisliste `PRICES` (USD/1M Tokens, längster Modell-Präfix gewinnt, `ollama/` = 0),
 Perzentile (nearest-rank), drei Renderer: `render_summary` (eine Zeile pro
 Konfiguration), `render_by_scenario` (Konfiguration × Szenario) und
-`render_failures` (jeder fehlgeschlagene Check mit Detail).
+`render_failures` (jeder fehlgeschlagene Check mit Detail). Erfolgsquoten werden
+als `k/n (%)` mit **Wilson-95%-Konfidenzintervall** ausgewiesen, Judge-Skalen als
+Mittelwert±Standardabweichung — Unterschiede zwischen Konfigurationen sind erst
+belastbar, wenn sich die Intervalle klar trennen.
+
+### 3.9b `judging.py` — Judge-Betrieb und Kalibrierung
+
+Drei Funktionen hinter den CLI-Subcommands `judge`, `label`, `calibrate`:
+`judge_results()` wendet den Judge **nachträglich** auf eine gespeicherte
+`results.json` an (rekonstruiert das Tool-Log, schreibt Scores und `summary.md`
+zurück — Konversationen werden nicht neu gefahren). `write_label_template()`
+erzeugt eine YAML-Annotationsvorlage (Transkript + leere Felder pro Lauf);
+`calibrate()` vergleicht ausgefüllte Labels mit den Judge-Scores und liefert
+Übereinstimmung (goal_achieved), MAE und Bias pro 1–5-Skala.
 
 ### 3.10 `scenario_gen.py` — Szenario-Generator (Automotive)
 
@@ -290,9 +303,6 @@ Secrets: `ANTHROPIC_API_KEY`, optional `LANGFUSE_*`.
 - **Simulator sieht nur Text:** kein geteilter Zustand mit dem Assistenten;
   Missverständnisse über Weltzustand (z. B. „läuft die Musik?") sind möglich und
   gewollt — der Assistent muss sie kommunikativ auflösen.
-- **fnmatch-Einzelmuster:** `with_args`-Werte sind genau ein Muster; ODER-Logik
-  (z. B. Titel *oder* Interpret) ist noch nicht ausdrückbar — bekanntes To-do aus
-  dem Experiment vom 2026-08-01.
 - **Judge/Structured Outputs nur Claude:** lokale Modelle können Testkandidat und
   Simulator sein, nicht Judge.
 - **Kostenmodell statisch:** `PRICES` ist eine gepflegte Tabelle, kein API-Abruf.

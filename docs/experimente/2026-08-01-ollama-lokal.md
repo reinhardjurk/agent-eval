@@ -116,3 +116,22 @@ _Erfolg = alle deterministischen Checks bestanden. Judge-Werte 1–5 (Mittelwert
 
 </details>
 
+
+## Nachtrag: Re-Scoring mit praezisierten Checks
+
+Nach Einbau von ODER-Mustern und result_ok (Stufe-1-Ausbau) wurden dieselben
+Laeufe neu bewertet:
+
+| Zelle | Checks alt | Checks neu (korrigiert) |
+|---|---|---|
+| qwen Baseline | 5/6 | **6/6** |
+| llama3.2:3b | 4/6 | 5/6 |
+| qwen mono | 5/6 | 5/6 |
+| qwen knapp | 4/6 | 5/6 |
+| qwen minimal | 4/6 | **6/6** |
+
+Korrigierte Lesart: Der **Minimal-Prompt fiel nicht ab** (Befund 3 dazu war ein
+Muster-Artefakt). Bestehen bleiben: der vergessene Temperaturwunsch bei mono und
+knapp (echte Teilauftrags-Verluste) und llamas fehlender play_media-Aufruf.
+Bei n=1 pro Zelle liegen alle Zellen innerhalb ueberlappender Konfidenzintervalle —
+fuer belastbare Aussagen Wiederholungen erhoehen.

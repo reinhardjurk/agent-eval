@@ -77,7 +77,11 @@ class AgentCard(BaseModel):
 
 class ToolCallCheck(BaseModel):
     tool: str
-    with_args: dict[str, str] = Field(default_factory=dict)  # Werte sind fnmatch-Muster
+    # Werte sind fnmatch-Muster; eine Liste bedeutet ODER (ein Treffer genuegt)
+    with_args: dict[str, str | list[str]] = Field(default_factory=dict)
+    # True (Default): der passende Aufruf muss auch erfolgreich sein
+    # (Tool-Ergebnis ohne "error"); False prueft nur den Aufruf selbst
+    result_ok: bool = True
 
 
 class SuccessCriteria(BaseModel):

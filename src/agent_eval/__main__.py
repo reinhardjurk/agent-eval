@@ -34,6 +34,22 @@ def main() -> None:
     cmp.add_argument("--by-scenario", action="store_true",
                      help="Zusaetzlich Aufschluesselung pro Szenario ausgeben")
 
+    jdg = sub.add_parser("judge", help="LLM-Judge nachtraeglich auf gespeicherte Laeufe anwenden")
+    jdg.add_argument("--results", required=True, help="Pfad zur results.json")
+    jdg.add_argument("--scenarios", default="scenarios",
+                     help="Szenario-Verzeichnis des Laufs (fuer Ziel/Persona)")
+    jdg.add_argument("--model", default=None,
+                     help="Judge-Modell (Default: aus der Config des Laufs)")
+
+    lbl = sub.add_parser("label", help="YAML-Vorlage fuer manuelle Annotation erzeugen")
+    lbl.add_argument("--results", required=True, help="Pfad zur results.json")
+    lbl.add_argument("--out", default=None,
+                     help="Zieldatei (Default: labels.yaml neben der results.json)")
+
+    cal = sub.add_parser("calibrate", help="Judge-Scores gegen manuelle Labels kalibrieren")
+    cal.add_argument("--results", required=True, help="Pfad zur results.json (mit Judge-Scores)")
+    cal.add_argument("--labels", required=True, help="Ausgefuellte Label-YAML")
+
     args = parser.parse_args()
     if args.command == "run":
         run_experiment(args.config, args.scenarios, reps=args.reps, out_dir=args.out,
@@ -46,6 +62,19 @@ def main() -> None:
         markdown += report.render_failures(payloads)
         report.append_step_summary(markdown)
         print(markdown)
+    elif args.command == "judge":
+        from .judging import judge_results
+
+        judge_results(Path(args.results), Path(args.scenarios), model=args.model)
+    elif args.command == "label":
+        from .judging import write_label_template
+
+        out = Path(args.out) if args.out else Path(args.results).parent / "labels.yaml"
+        write_label_template(Path(args.results), out)
+    elif args.command == "calibrate":
+        from .judging import calibrate
+
+        calibrate(Path(args.results), Path(args.labels))
 
 
 if __name__ == "__main__":

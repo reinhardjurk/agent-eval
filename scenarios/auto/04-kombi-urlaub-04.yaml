@@ -16,4 +16,6 @@ success_criteria:
       destination: '*timmendorf*'
   - tool: play_media
     with_args:
-      query: '*kinderlieder*'
+      query:
+      - '*kinderlieder*'
+      - '*kinder*'

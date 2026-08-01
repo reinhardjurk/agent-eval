@@ -6,8 +6,9 @@ $GITHUB_STEP_SUMMARY angehaengt.
 
 from __future__ import annotations
 
+import math
 import os
-from statistics import mean
+from statistics import mean, stdev
 
 # USD pro 1M Tokens (Input, Output) — Stand 2026-06, laengster Praefix gewinnt.
 PRICES: dict[str, tuple[float, float]] = {
@@ -52,6 +53,35 @@ def _pct(value) -> str:
     return "–" if value is None else f"{value:.0f}%"
 
 
+def wilson_interval(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    """95%-Konfidenzintervall (Wilson) fuer eine Erfolgsquote, in Prozent."""
+    if n == 0:
+        return (0.0, 100.0)
+    p = k / n
+    denom = 1 + z * z / n
+    center = (p + z * z / (2 * n)) / denom
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return (max(0.0, center - half) * 100, min(1.0, center + half) * 100)
+
+
+def _success_counts(runs: list[dict]) -> tuple[int, int]:
+    judged = [r for r in runs if r.get("success") is not None]
+    return sum(1 for r in judged if r["success"]), len(judged)
+
+
+def _success_str(runs: list[dict]) -> str:
+    k, n = _success_counts(runs)
+    return f"{k}/{n} ({100 * k / n:.0f} %)" if n else "–"
+
+
+def _mean_sd(values: list) -> str:
+    if not values:
+        return "–"
+    if len(values) == 1:
+        return f"{values[0]:.2f}"
+    return f"{mean(values):.2f}±{stdev(values):.2f}"
+
+
 def _judge_mean(runs: list[dict], key: str) -> float | None:
     vals = [r["judge"][key] for r in runs if r.get("judge")]
     if not vals:
@@ -65,8 +95,8 @@ def render_summary(payloads: list[dict]) -> str:
     lines = [
         "## Eval-Ergebnisse",
         "",
-        "| Konfiguration | Modell | Runs | Erfolg (Checks) | Ziel erreicht (Judge) | Faithfulness | Dialog | Voice | Ø Turns | Ø Tokens in/out | Kosten $ | Turn-Latenz p50/p95 s | TTFT p50/p95 s |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| Konfiguration | Modell | Runs | Erfolg (Checks) | 95%-CI | Ziel erreicht (Judge) | Faithfulness | Dialog | Voice | Ø Turns | Ø Tokens in/out | Kosten $ | Turn-Latenz p50/p95 s | TTFT p50/p95 s |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for payload in payloads:
         cfg = payload["config"]
@@ -74,21 +104,25 @@ def render_summary(payloads: list[dict]) -> str:
         if not runs:
             continue
         n = len(runs)
-        judged = [r for r in runs if r.get("success") is not None]
-        success = 100.0 * sum(1 for r in judged if r["success"]) / len(judged) if judged else None
+        k, n_judged = _success_counts(runs)
+        ci_lo, ci_hi = wilson_interval(k, n_judged)
         latencies = [lat for r in runs for lat in r["metrics"]["turn_latencies"]]
         ttfts = [t for r in runs for t in r["metrics"]["ttfts"]]
         tokens_in = [r["metrics"]["input_tokens"] for r in runs]
         tokens_out = [r["metrics"]["output_tokens"] for r in runs]
         cost = sum(r["metrics"]["cost_usd"] for r in runs)
 
+        def scale(key):
+            return _mean_sd([r["judge"][key] for r in runs if r.get("judge")])
+
         lines.append(
             f"| {cfg['id']} | {cfg['model']} | {n} "
-            f"| {_pct(success)} "
+            f"| {_success_str(runs)} "
+            f"| {ci_lo:.0f}–{ci_hi:.0f} % "
             f"| {_pct(_judge_mean(runs, 'goal_achieved'))} "
-            f"| {_fmt(_judge_mean(runs, 'faithfulness'))} "
-            f"| {_fmt(_judge_mean(runs, 'conversation_quality'))} "
-            f"| {_fmt(_judge_mean(runs, 'voice_suitability'))} "
+            f"| {scale('faithfulness')} "
+            f"| {scale('conversation_quality')} "
+            f"| {scale('voice_suitability')} "
             f"| {mean(r['metrics']['turns'] for r in runs):.1f} "
             f"| {mean(tokens_in):.0f}/{mean(tokens_out):.0f} "
             f"| {cost:.4f} "
@@ -97,8 +131,10 @@ def render_summary(payloads: list[dict]) -> str:
         )
     lines += [
         "",
-        "_Erfolg = alle deterministischen Checks bestanden. Judge-Werte 1–5 (Mittelwert), "
-        "Ziel erreicht in % der Laeufe. Kosten sind Schaetzwerte auf Basis der Listenpreise._",
+        "_Erfolg = alle deterministischen Checks bestanden (k/n mit Wilson-95%-CI — bei "
+        "kleinem n sind breite Intervalle normal; Unterschiede erst ernst nehmen, wenn sich "
+        "die Intervalle klar trennen). Judge-Skalen 1–5 als Mittelwert±SD, Ziel erreicht in "
+        "% der Laeufe. Kosten sind Schaetzwerte auf Basis der Listenpreise._",
         "",
     ]
     return "\n".join(lines)
@@ -120,13 +156,10 @@ def render_by_scenario(payloads: list[dict]) -> str:
             by_scenario.setdefault(run["scenario"], []).append(run)
         for scenario_id in sorted(by_scenario):
             runs = by_scenario[scenario_id]
-            judged = [r for r in runs if r.get("success") is not None]
-            success = (100.0 * sum(1 for r in judged if r["success"]) / len(judged)
-                       if judged else None)
             ttfts = [t for r in runs for t in r["metrics"]["ttfts"]]
             lines.append(
                 f"| {cfg['id']} | {scenario_id} | {len(runs)} "
-                f"| {_pct(success)} "
+                f"| {_success_str(runs)} "
                 f"| {_pct(_judge_mean(runs, 'goal_achieved'))} "
                 f"| {mean(r['metrics']['turns'] for r in runs):.1f} "
                 f"| {_fmt(percentile(ttfts, 50))} "
