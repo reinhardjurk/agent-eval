@@ -30,6 +30,8 @@ Konfiguration (configs/*.yaml)          Szenario (scenarios/*.yaml)
 
 > 📘 **Ausführliche Schritt-für-Schritt-Anleitung** — inklusive Vergleichs-Workflows
 > für Konfigurationen und Szenarien: [docs/ANLEITUNG.md](docs/ANLEITUNG.md)
+> 🔧 **Technische Dokumentation** — Architektur, Komponenten, Datenformate,
+> Erweiterungspunkte: [docs/TECHNIK.md](docs/TECHNIK.md)
 
 ## Quickstart
 
